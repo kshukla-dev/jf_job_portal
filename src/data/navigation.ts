@@ -1,13 +1,10 @@
 import { NavigationItem } from '@/types/common';
 
 export const mainNavigation: NavigationItem[] = [
-  { name: 'Jobs', href: '/jobs' },
-  { name: 'Career Advice', href: '/career-advice' },
+  { name: 'Job Alert', href: '/job-alert' },
   { name: 'Blogs', href: '/blog' },
   { name: 'News', href: '/news' },
   { name: 'Vacancies', href: '/vacancies' },
-  { name: 'Job Alert', href: '/job-alert' },
-  { name: 'About Us', href: '/about' },
 ];
 
 export interface LanguageItem {

@@ -4,9 +4,8 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { mainNavigation, languages } from '@/data/navigation';
-import { Button } from '@/components/common/Button';
-import { useLanguage, LanguageCode } from '@/context/LanguageContext';
+import { mainNavigation } from '@/data/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 import styles from './MobileMenu.module.css';
 
 interface MobileMenuProps {
@@ -16,7 +15,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
-  const { currentLang, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -31,20 +30,14 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
   const getNavLabel = (href: string, originalName: string) => {
     switch (href) {
-      case '/jobs':
-        return t('nav_jobs', originalName);
-      case '/career-advice':
-        return t('nav_career_advice', originalName);
-      case '/blog':
-        return t('nav_blogs', originalName);
-      case '/news':
-        return t('nav_news', originalName);
       case '/vacancies':
         return t('nav_vacancies', originalName);
       case '/job-alert':
         return t('nav_job_alert', originalName);
-      case '/about':
-        return t('nav_about_us', originalName);
+      case '/blog':
+        return t('nav_blogs', originalName);
+      case '/news':
+        return t('nav_news', originalName);
       default:
         return originalName;
     }
@@ -90,35 +83,6 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             })}
           </ul>
         </nav>
-
-        <div className={styles.actions}>
-          <div className={styles.mobileLangRow}>
-            <span className={styles.mobileLangLabel}>Select Language</span>
-            <div className={styles.mobileLangGrid}>
-              {languages.map((lang) => {
-                const isSelected = currentLang === lang.code;
-                return (
-                  <button
-                    key={lang.code}
-                    className={`${styles.mobileLangBtn} ${isSelected ? styles.mobileLangBtnActive : ''}`}
-                    onClick={() => {
-                      setLanguage(lang.code as LanguageCode);
-                    }}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <Button href="/login" variant="outline" fullWidth onClick={onClose}>
-            {t('btn_login', 'Login')}
-          </Button>
-          <Button href="/register" variant="primary" fullWidth onClick={onClose}>
-            {t('btn_register', 'Register')}
-          </Button>
-        </div>
       </div>
     </>
   );
