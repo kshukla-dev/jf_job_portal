@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { mainNavigation } from '@/data/navigation';
-import { useLanguage } from '@/context/LanguageContext';
 import styles from './MobileMenu.module.css';
 
 interface MobileMenuProps {
@@ -15,7 +14,6 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
-  const { t } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -27,21 +25,6 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
-
-  const getNavLabel = (href: string, originalName: string) => {
-    switch (href) {
-      case '/vacancies':
-        return t('nav_vacancies', originalName);
-      case '/job-alert':
-        return t('nav_job_alert', originalName);
-      case '/blog':
-        return t('nav_blogs', originalName);
-      case '/news':
-        return t('nav_news', originalName);
-      default:
-        return originalName;
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -76,7 +59,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
                     onClick={onClose}
                   >
-                    {getNavLabel(item.href, item.name)}
+                    {item.name}
                   </Link>
                 </li>
               );

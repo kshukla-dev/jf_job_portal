@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter, IBM_Plex_Serif, Caveat } from 'next/font/google';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { LanguageProvider } from '@/context/LanguageContext';
 import './globals.css';
 
 const inter = Inter({
@@ -46,11 +45,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${ibmPlexSerif.variable} ${caveat.variable}`}>
       <body>
-        <LanguageProvider>
-          <Header />
-          <main>{children}</main>
-          <Footer />
-        </LanguageProvider>
+        <Header />
+        <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );

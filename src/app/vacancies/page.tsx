@@ -8,13 +8,11 @@ import { PopularFilters } from '@/components/home/PopularFilters';
 import { JobGrid } from '@/components/jobs/JobGrid';
 import { JobFilters } from '@/components/jobs/JobFilters';
 import { featuredJobs } from '@/data/jobs';
-import { useLanguage } from '@/context/LanguageContext';
 import styles from './vacancies.module.css';
 
 function VacanciesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t } = useLanguage();
 
   const queryQ = searchParams.get('q') || '';
   const queryLoc = searchParams.get('location') || '';
@@ -103,10 +101,10 @@ function VacanciesContent() {
         <div className={styles.mapBackground} aria-hidden="true" />
         <Container>
           <div className={styles.heroInner}>
-            <span className={styles.badge}>{t('hero_eyebrow_global', 'Global Opportunities')}</span>
-            <h1 className={styles.title}>{t('vacancies_title', 'Explore International Vacancies')}</h1>
+            <span className={styles.badge}>Global Opportunities</span>
+            <h1 className={styles.title}>Explore International Vacancies</h1>
             <p className={styles.subtitle}>
-              {t('vacancies_sub', 'Browse verified job opportunities with premier technology and corporate leaders across Europe, Asia, and the Americas.')}
+              Browse verified job opportunities with premier technology and corporate leaders across Europe, Asia, and the Americas.
             </p>
           </div>
         </Container>
@@ -157,7 +155,7 @@ function VacanciesContent() {
             <main className={styles.mainContent}>
               <div className={styles.topBar}>
                 <span className={styles.resultsCount}>
-                  {t('showing_vacancies', 'Showing active vacancies')}: {filteredJobs.length}
+                  Showing active vacancies: {filteredJobs.length}
                 </span>
                 {(searchTerm || selectedLocation || selectedType || activeChip) && (
                   <button
@@ -171,7 +169,7 @@ function VacanciesContent() {
                     }}
                     className={styles.clearBtn}
                   >
-                    {t('reset_all', 'Clear all filters')}
+                    Clear all filters
                   </button>
                 )}
               </div>

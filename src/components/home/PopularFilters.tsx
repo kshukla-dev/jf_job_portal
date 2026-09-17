@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Container } from '@/components/common/Container';
 import { filterChips } from '@/data/jobs';
-import { useLanguage } from '@/context/LanguageContext';
 import styles from './PopularFilters.module.css';
 
 interface PopularFiltersProps {
@@ -18,37 +17,6 @@ export function PopularFilters({
   onSelectFilter,
   targetPath = '/vacancies',
 }: PopularFiltersProps = {}) {
-  const { t } = useLanguage();
-
-  const getChipLabel = (id: string, defaultLabel: string) => {
-    switch (id.toLowerCase()) {
-      case 'remote':
-        return t('chip_remote', defaultLabel);
-      case 'netherlands':
-        return t('chip_netherlands', defaultLabel);
-      case 'india':
-        return t('chip_india', defaultLabel);
-      case 'poland':
-        return t('chip_poland', defaultLabel);
-      case 'germany':
-        return t('chip_germany', defaultLabel);
-      case 'contract':
-        return t('chip_contract', defaultLabel);
-      case 'permanent':
-        return t('chip_permanent', defaultLabel);
-      case 'it-software':
-        return t('chip_it_software', defaultLabel);
-      case 'finance':
-        return t('chip_finance', defaultLabel);
-      case 'hr':
-        return t('chip_hr', defaultLabel);
-      case 'marketing':
-        return t('chip_marketing', defaultLabel);
-      default:
-        return defaultLabel;
-    }
-  };
-
   return (
     <div className={styles.wrapper}>
       <Container>
@@ -56,7 +24,6 @@ export function PopularFilters({
           <div className={styles.chipsList} role="list" aria-label="Popular Filters">
             {filterChips.map((chip) => {
               const isActive = activeFilter.toLowerCase() === chip.id.toLowerCase();
-              const label = getChipLabel(chip.id, chip.label);
               if (onSelectFilter) {
                 return (
                   <button
@@ -65,7 +32,7 @@ export function PopularFilters({
                     onClick={() => onSelectFilter(isActive ? '' : chip.id)}
                     className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
                   >
-                    {label}
+                    {chip.label}
                   </button>
                 );
               }
@@ -76,7 +43,7 @@ export function PopularFilters({
                   href={`${targetPath}?filter=${chip.id}`}
                   className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
                 >
-                  {label}
+                  {chip.label}
                 </Link>
               );
             })}
@@ -94,7 +61,7 @@ export function PopularFilters({
               <line x1="9" y1="8" x2="15" y2="8"></line>
               <line x1="17" y1="16" x2="23" y2="16"></line>
             </svg>
-            <span>{t('advanced_search', 'Advanced Search')}</span>
+            <span>Advanced Search</span>
           </Link>
         </div>
       </Container>

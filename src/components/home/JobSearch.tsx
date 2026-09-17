@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container } from '@/components/common/Container';
-import { useLanguage } from '@/context/LanguageContext';
 import styles from './JobSearch.module.css';
 
 interface JobSearchProps {
@@ -22,7 +21,6 @@ export function JobSearch({
   targetPath = '/vacancies',
 }: JobSearchProps = {}) {
   const router = useRouter();
-  const { t } = useLanguage();
   const [keyword, setKeyword] = useState(initialKeyword);
   const [location, setLocation] = useState(initialLocation);
   const [jobType, setJobType] = useState(initialJobType);
@@ -30,12 +28,12 @@ export function JobSearch({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const jobTypeOptions = [
-    { value: 'All types', label: t('all_types', 'All types') },
-    { value: 'Full Time', label: t('type_full_time', 'Full Time') },
-    { value: 'Permanent', label: t('chip_permanent', 'Permanent') },
-    { value: 'Contract', label: t('chip_contract', 'Contract') },
-    { value: 'Remote', label: t('chip_remote', 'Remote') },
-    { value: 'Part Time', label: t('type_part_time', 'Part Time') },
+    { value: 'All types', label: 'All types' },
+    { value: 'Full Time', label: 'Full Time' },
+    { value: 'Permanent', label: 'Permanent' },
+    { value: 'Contract', label: 'Contract' },
+    { value: 'Remote', label: 'Remote' },
+    { value: 'Part Time', label: 'Part Time' },
   ];
 
   useEffect(() => {
@@ -80,14 +78,14 @@ export function JobSearch({
             </span>
             <div className={styles.inputGroup}>
               <label htmlFor="job-search-keyword" className={styles.label}>
-                {t('search_keyword_title', 'Job title, skills or keywords')}
+                Job title, skills or keywords
               </label>
               <input
                 id="job-search-keyword"
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder={t('search_keyword_ph', 'e.g. Software Developer, HR, Finance')}
+                placeholder="e.g. Software Developer, HR, Finance"
                 className={styles.input}
               />
             </div>
@@ -108,14 +106,14 @@ export function JobSearch({
             </span>
             <div className={styles.inputGroup}>
               <label htmlFor="job-search-location" className={styles.label}>
-                {t('search_location_title', 'Location')}
+                Location
               </label>
               <input
                 id="job-search-location"
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder={t('search_location_ph', 'e.g. Netherlands, India, Remote')}
+                placeholder="e.g. Netherlands, India, Remote"
                 className={styles.input}
               />
             </div>
@@ -148,7 +146,7 @@ export function JobSearch({
               </svg>
             </span>
             <div className={styles.inputGroup}>
-              <span className={styles.label}>{t('search_type_title', 'Job type')}</span>
+              <span className={styles.label}>Job type</span>
               <div className={styles.dropdownTrigger}>
                 <span className={styles.dropdownValue}>
                   {jobTypeOptions.find((o) => o.value === jobType)?.label || jobType}
@@ -202,7 +200,7 @@ export function JobSearch({
 
           {/* Search Button */}
           <button type="submit" className={styles.searchBtn}>
-            <span>{t('search_btn', 'Search Jobs')}</span>
+            <span>Search Jobs</span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>

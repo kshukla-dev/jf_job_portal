@@ -6,29 +6,12 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { mainNavigation } from '@/data/navigation';
 import { Container } from '@/components/common/Container';
-import { useLanguage } from '@/context/LanguageContext';
 import { MobileMenu } from './MobileMenu';
 import styles from './Header.module.css';
 
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { t } = useLanguage();
-
-  const getNavLabel = (href: string, originalName: string) => {
-    switch (href) {
-      case '/vacancies':
-        return t('nav_vacancies', originalName);
-      case '/job-alert':
-        return t('nav_job_alert', originalName);
-      case '/blog':
-        return t('nav_blogs', originalName);
-      case '/news':
-        return t('nav_news', originalName);
-      default:
-        return originalName;
-    }
-  };
 
   return (
     <header className={styles.header}>
@@ -57,7 +40,7 @@ export function Header() {
                 href={item.href}
                 className={`${styles.navLink} ${isActive ? styles.activeNavLink : ''}`}
               >
-                {getNavLabel(item.href, item.name)}
+                {item.name}
               </Link>
             );
           })}
