@@ -1,0 +1,131 @@
+.presenceCard {
+  background: linear-gradient(135deg, #07192C 0%, #0A2540 60%, #0B315B 100%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  position: relative;
+  min-height: 280px;
+  box-shadow: 0 10px 30px -5px rgba(7, 25, 44, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.earthVisual {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 58%;
+  background-image: url('/images/banners/earth-orbit.jpg');
+  background-size: cover;
+  background-position: center right;
+  opacity: 0.85;
+  mask-image: linear-gradient(to right, transparent 0%, black 40%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%);
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  padding: 32px 32px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 58%;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-white);
+  line-height: 1.2;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #94A3B8;
+  margin-bottom: 24px;
+}
+
+.btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: transparent;
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.btn:hover {
+  background-color: var(--color-white);
+  color: var(--color-navy);
+  border-color: var(--color-white);
+}
+
+.metricsOverlay {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: right;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricVal {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-white);
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.metricLabel {
+  font-size: 11px;
+  color: #94A3B8;
+  font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 768px) {
+  .presenceCard {
+    flex-direction: column;
+    min-height: 320px;
+  }
+
+  .content {
+    max-width: 100%;
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .metricsOverlay {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0 24px 24px;
+    text-align: left;
+  }
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
+  <!-- Randstad curved mark -->
+  <g transform="translate(10, 10)">
+    <path d="M2 14 C2 8 6 3 12 3 C18 3 22 8 22 14 M12 3 C12 8 16 14 22 14" stroke="#2175D9" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <text x="28" y="16" font-family="'Inter', sans-serif" font-weight="700" font-size="16" fill="#0A2540">randstad</text>
+  </g>
+</svg>

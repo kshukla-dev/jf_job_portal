@@ -1,0 +1,107 @@
+.trustedSection {
+  background-color: var(--color-white);
+  padding: 40px 0 48px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748B;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.logoTrack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-grow: 1;
+  gap: 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 0;
+}
+
+.logoTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.logoItem {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.88;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.logoItem:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.companyLogo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.rightCol {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.divider {
+  width: 1px;
+  height: 28px;
+  background-color: var(--color-border);
+}
+
+.viewAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-blue);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: gap var(--transition-fast);
+}
+
+.viewAll:hover {
+  color: var(--color-blue-dark);
+  gap: 9px;
+}
+
+@media (max-width: 1024px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .logoTrack {
+    width: 100%;
+    gap: 32px;
+  }
+
+  .rightCol {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .divider {
+    display: none;
+  }
+}

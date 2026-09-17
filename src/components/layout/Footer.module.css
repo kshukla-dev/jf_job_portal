@@ -1,0 +1,126 @@
+.footer {
+  background-color: var(--color-navy-dark);
+  color: var(--color-white);
+  padding: 64px 0 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 56px;
+}
+
+.brandCol {
+  padding-right: 20px;
+}
+
+.logoImage {
+  height: 38px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  margin-bottom: 18px;
+}
+
+.brandDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #94A3B8;
+  margin-bottom: 24px;
+}
+
+.socials {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #CBD5E1;
+  transition: all var(--transition-fast);
+}
+
+.socialLink:hover {
+  background-color: var(--color-blue);
+  color: var(--color-white);
+}
+
+.colTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-white);
+  margin-bottom: 18px;
+  letter-spacing: 0.01em;
+}
+
+.linkList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.linkItem a {
+  font-size: 14px;
+  color: #94A3B8;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.linkItem a:hover {
+  color: var(--color-sky);
+}
+
+.bottomBar {
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748B;
+}
+
+.bottomLinks {
+  display: flex;
+  gap: 20px;
+}
+
+.bottomLinks a {
+  color: #64748B;
+  transition: color var(--transition-fast);
+}
+
+.bottomLinks a:hover {
+  color: #94A3B8;
+}
+
+@media (max-width: 1024px) {
+  .topGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .brandCol {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .bottomBar {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+}

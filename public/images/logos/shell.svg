@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
+  <!-- Shell Scallop -->
+  <g transform="translate(15, 5)">
+    <path d="M15 2 C8 2 2 12 2 20 C2 26 7 29 15 29 C23 29 28 26 28 20 C28 12 22 2 15 2 Z" fill="#FBCE07" stroke="#DD1D21" stroke-width="2"/>
+    <path d="M15 2 L15 29 M9 5 L11 29 M21 5 L19 29 M5 12 L8 28 M25 12 L22 28" stroke="#DD1D21" stroke-width="1.5"/>
+  </g>
+</svg>

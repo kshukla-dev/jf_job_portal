@@ -1,0 +1,46 @@
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: capitalize;
+  letter-spacing: 0.01em;
+  margin-bottom: 2px;
+}
+
+.input {
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  width: 100%;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}

@@ -1,0 +1,163 @@
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(10, 37, 64, 0.08), 0 4px 8px -2px rgba(10, 37, 64, 0.04);
+  border-color: #CBD5E1;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.logoWrapper {
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.companyLogo {
+  max-height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.bookmarkBtn {
+  color: #94A3B8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.bookmarkBtn:hover {
+  color: var(--color-blue);
+  background-color: var(--color-blue-light);
+}
+
+.bookmarked {
+  color: var(--color-blue);
+  fill: var(--color-blue);
+}
+
+.titleLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin-bottom: 4px;
+  transition: color var(--transition-fast);
+}
+
+.titleLink:hover .title {
+  color: var(--color-blue);
+}
+
+.companyName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted);
+  margin-bottom: 14px;
+}
+
+.metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.metaIcon {
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.skillsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.skillBadge {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  background-color: #F1F5F9;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.01em;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.postedTime {
+  font-size: 12px;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.viewJobBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-blue);
+  background-color: transparent;
+  border: 1px solid rgba(0, 102, 255, 0.35);
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.viewJobBtn:hover {
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  border-color: var(--color-blue);
+}

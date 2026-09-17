@@ -1,0 +1,26 @@
+.pageWrapper {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.bannersSection {
+  padding: 64px 0 72px;
+  background-color: var(--color-white);
+}
+
+.bannersGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .bannersSection {
+    padding: 40px 0 48px;
+  }
+
+  .bannersGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}

@@ -1,0 +1,73 @@
+.page {
+  padding: 48px 0 80px;
+  background-color: var(--color-white);
+}
+
+.hero {
+  background: linear-gradient(140deg, #0f1f3d 0%, #143369 45%, #081326 100%);
+  color: var(--color-white);
+  padding: 56px 0;
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--color-white);
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #CBD5E1;
+  max-width: 650px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-blue);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-navy);
+  margin-bottom: 8px;
+}
+
+.cardCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-blue);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

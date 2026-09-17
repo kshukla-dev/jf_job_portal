@@ -1,0 +1,19 @@
+.page {
+  padding: 48px 0 80px;
+  background-color: #F8FAFC;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-blue);
+  margin-bottom: 24px;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-blue-dark);
+}

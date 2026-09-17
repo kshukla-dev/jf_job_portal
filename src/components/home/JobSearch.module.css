@@ -1,0 +1,333 @@
+.searchWrapper {
+  position: relative;
+  z-index: 20;
+  margin-top: -84px;
+}
+
+.searchCard {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 36px -8px rgba(10, 37, 64, 0.16), 0 4px 12px -2px rgba(10, 37, 64, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 8px 10px 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.searchCard:focus-within {
+  box-shadow: 0 20px 44px -6px rgba(10, 37, 64, 0.22), 0 0 0 2px rgba(247, 147, 30, 0.3);
+  border-color: rgba(247, 147, 30, 0.4);
+}
+
+.field {
+  flex: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px 10px 0;
+  cursor: text;
+}
+
+.fieldLocation {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  cursor: text;
+}
+
+.fieldType {
+  position: relative;
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.dropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.dropdownValue {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  color: #64748B;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  color: var(--color-orange);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 0;
+  min-width: 220px;
+  background-color: var(--color-white);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -4px rgba(15, 31, 61, 0.18), 0 4px 14px rgba(0, 0, 0, 0.04);
+  padding: 6px;
+  list-style: none;
+  z-index: 100;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.dropdownOption:hover {
+  background-color: #F8FAFC;
+  color: var(--color-orange);
+}
+
+.dropdownOptionSelected {
+  background-color: #FFF7ED;
+  color: var(--color-orange);
+  font-weight: 600;
+}
+
+.dropdownOptionSelected svg {
+  color: var(--color-orange);
+}
+
+.divider {
+  width: 1px;
+  height: 40px;
+  background-color: var(--color-border);
+  flex-shrink: 0;
+}
+
+.icon {
+  color: #64748B;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1E293B;
+  margin-bottom: 2px;
+  letter-spacing: 0.01em;
+  cursor: inherit;
+}
+
+.input {
+  border: none !important;
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  width: 100%;
+  padding: 0;
+}
+
+.input:focus,
+.input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.select {
+  border: none !important;
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 20px;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right center;
+  background-size: 14px;
+}
+
+.select:focus,
+.select:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.searchBtn {
+  flex-shrink: 0;
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  border: none;
+  height: 52px;
+  padding: 0 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.searchBtn:hover {
+  background-color: var(--color-blue-dark);
+  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.35);
+}
+
+.searchBtn svg {
+  transition: transform var(--transition-fast);
+}
+
+.searchBtn:hover svg {
+  transform: translateX(3px);
+}
+
+@media (max-width: 1024px) {
+  .searchWrapper {
+    margin-top: -28px;
+  }
+
+  .searchCard {
+    flex-direction: column;
+    padding: 18px;
+    gap: 14px;
+    align-items: stretch;
+    border-radius: 18px;
+    box-shadow: 0 12px 32px rgba(10, 37, 64, 0.12);
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .field,
+  .fieldLocation,
+  .fieldType {
+    padding: 6px 0 10px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .fieldType {
+    border-bottom: none;
+  }
+
+  .dropdownMenu {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    box-shadow: 0 16px 36px rgba(10, 37, 64, 0.2);
+    z-index: 100;
+  }
+
+  .searchBtn {
+    width: 100%;
+    justify-content: center;
+    height: 50px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .searchWrapper {
+    margin-top: -18px;
+  }
+
+  .searchCard {
+    padding: 14px 16px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+
+  .field,
+  .fieldLocation,
+  .fieldType {
+    padding: 4px 0 8px;
+  }
+
+  .label {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .input,
+  .select {
+    font-size: 13.5px;
+  }
+
+  .searchBtn {
+    height: 46px;
+    font-size: 14.5px;
+    border-radius: 10px;
+  }
+}

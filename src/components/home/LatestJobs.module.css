@@ -1,0 +1,44 @@
+.section {
+  padding: 64px 0 72px;
+  background-color: var(--color-white);
+}
+
+.viewAllLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-blue);
+  text-decoration: none;
+  transition: gap var(--transition-fast);
+}
+
+.viewAllLink:hover {
+  color: var(--color-blue-dark);
+  gap: 9px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 48px 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
