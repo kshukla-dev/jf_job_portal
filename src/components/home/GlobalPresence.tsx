@@ -5,7 +5,7 @@ import styles from './GlobalPresence.module.css';
 export function GlobalPresence() {
   return (
     <div className={styles.presenceCard}>
-      {/* Background Earth visual */}
+
       <div className={styles.earthVisual} aria-hidden="true" />
 
       {/* Content */}
