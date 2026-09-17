@@ -1,5 +1,4 @@
 import { featuredJobs } from '@/data/jobs';
-import { countriesData } from '@/data/countries';
 import { blogPosts } from '@/data/blogs';
 import { newsArticles } from '@/data/news';
 import { Job } from '@/types/job';
@@ -14,10 +13,6 @@ export async function getAllJobs(): Promise<Job[]> {
 
 export async function getJobBySlug(slug: string): Promise<Job | undefined> {
   return featuredJobs.find((job) => job.slug === slug);
-}
-
-export async function getCountryBySlug(slug: string) {
-  return countriesData.find((country) => country.slug === slug);
 }
 
 export async function getBlogPostBySlug(slug: string) {

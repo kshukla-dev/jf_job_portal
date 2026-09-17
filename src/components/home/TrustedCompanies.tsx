@@ -47,7 +47,7 @@ export function TrustedCompanies() {
           {/* Right separator & View all link */}
           <div className={styles.rightCol}>
             <div className={styles.divider} aria-hidden="true" />
-            <Link href="/employers" className={styles.viewAll}>
+            <Link href="/vacancies" className={styles.viewAll}>
               <span>View all companies</span>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
