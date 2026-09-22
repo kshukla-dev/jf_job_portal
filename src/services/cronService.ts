@@ -77,7 +77,7 @@ export async function getOtysAuthToken(apiKey?: string): Promise<OtysAuthRespons
 export async function getData(num: number) {
   const response = await fetch('https://jsonplaceholder.typicode.com/users');
   const data = await response.json();
-  console.log('[JSONPlaceholder Posts Response]:', num, data);
+  console.log('[JSONPlaceholder Posts Response every hour]:', num, data);
   return data;
 }
 
