@@ -96,14 +96,17 @@ let cronJob: Cron | null = null;
 // Har 1 Ghanta    : 0 * * * *       (5 fields)
 // Har 2 Ghanta    : 0 */2 * * *     (5 fields)
 // Roz Raat 12 Baje: 0 0 * * *      (5 fields)
-export function startCronService(cronExpression: string = '*/10 * * * * *') {
+export function startCronService(cronExpression: string = '0 * * * *') {
   if (cronJob) {
     return cronJob;
   }
 
   let numb = 0;
 
-  // Create and start Cron job
+  // 1. Page load hote hi turant ek baar call karein
+  getData(numb);
+
+  // 2. Uske baad har 1 ghante me cron ke zariye call hota rahega
   cronJob = new Cron(cronExpression, async () => {
     numb++;
     await getData(numb);
