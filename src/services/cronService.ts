@@ -17,69 +17,8 @@ export interface OtysAuthResponse {
   [key: string]: unknown;
 }
 
-/**
- * Calls OTYS Auth API (POST /api/auth) to get the Bearer access token
- * Swagger: https://webapi.otys.app/api#/Auth/app_auth
- */
-// export async function getOtysAuthToken(apiKey?: string): Promise<OtysAuthResponse | null> {
-//   try {
-//     const isBrowser = typeof window !== 'undefined';
-//     const url = isBrowser
-//       ? '/api/otys/auth'
-//       : `${(process.env.OTYS_API_BASE_URL || 'https://webapi.otys.app/api').replace(/\/+$/, '')}/auth`;
 
-//     const key = apiKey || '';
 
-//     const response = await fetch(url, {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-
-//       },
-//       body: JSON.stringify({ key }),
-//     });
-
-//     const data: OtysAuthResponse = await response.json();
-//     console.log('[OTYS Auth Token Response]:', data);
-//     return data;
-//   } catch (error) {
-//     console.error('[OTYS Auth Error]:', error);
-//     return null;
-//   }
-// }
-
-export async function getOtysAuthToken(apiKey?: string): Promise<OtysAuthResponse | null> {
-  try {
-    const response = await fetch('/api/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    const data: OtysAuthResponse = await response.json();
-
-    console.log('[OTYS Auth Token Response]:', data);
-
-    if (!response.ok) {
-      console.error('[OTYS Auth Error]:', data);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('[OTYS Auth Error]:', error);
-    return null;
-  }
-}
-
-export async function getData(num: number) {
-  const response = await fetch('https://jsonplaceholder.typicode.com/users');
-  const data = await response.json();
-  console.log('[JSONPlaceholder Posts Response every hour]:', num, data);
-  return data;
-}
 
 let cronJob: Cron | null = null;
 
@@ -100,16 +39,11 @@ export function startCronService(cronExpression: string = '0 * * * *') {
   if (cronJob) {
     return cronJob;
   }
-
   let numb = 0;
-
-  // 1. Page load hote hi turant ek baar call karein
-  getData(numb);
 
   // 2. Uske baad har 1 ghante me cron ke zariye call hota rahega
   cronJob = new Cron(cronExpression, async () => {
     numb++;
-    await getData(numb);
   });
 
   return cronJob;
