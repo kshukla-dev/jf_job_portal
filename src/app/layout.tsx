@@ -46,7 +46,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${ibmPlexSerif.variable} ${caveat.variable}`}>
       <body>
-        <CronRunner />
         <Header />
         <main>{children}</main>
         <Footer />
