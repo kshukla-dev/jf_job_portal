@@ -108,7 +108,7 @@ export function getAuthConfig() {
 
   const authKey =
     process.env.OTYS_API_KEY ||
-    process.env.APP_AUTH_KEY || 'gv0MSr8EV3HovrVzLWcCQ0SkkA8PiortyNWZ2/zrih9IfsTZQ8y33Q==';
+    process.env.APP_AUTH_KEY || '';
 
   const websiteId =
     process.env.OTYS_WEBSITE_ID ||
@@ -293,7 +293,6 @@ export async function requestNewToken(): Promise<string> {
         }
       }
     }
-    console.log('response');
 
     if (!response) {
       throw lastNetworkErr || new Error('Network request to auth endpoint timed out or failed');
