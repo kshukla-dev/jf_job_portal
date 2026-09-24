@@ -46,7 +46,7 @@ export function JobCard({ job }: JobCardProps) {
       </div>
 
       {/* Job Title & Company */}
-      <Link href={`/vacancies/${job.slug}`} className={styles.titleLink}>
+      <Link href={`/vacancies/${job.id}`} className={styles.titleLink}>
         <h3 className={styles.title}>{job.title}</h3>
       </Link>
       <p className={styles.companyName}>{job.company}</p>
@@ -101,7 +101,7 @@ export function JobCard({ job }: JobCardProps) {
       {/* Footer: Posted time & View Job button */}
       <div className={styles.footer}>
         <span className={styles.postedTime}>{job.postedTime}</span>
-        <Link href={`/vacancies/${job.slug}`} className={styles.viewJobBtn}>
+        <Link href={`/vacancies/${job.id}`} className={styles.viewJobBtn}>
           <span>View Job</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
