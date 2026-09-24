@@ -49,8 +49,8 @@ export interface TokenStore {
  * The system returns a safe mock token and simulates the 12-hour lifecycle.
  * Set AUTH_API_ENABLED=true in .env.local to activate real API calls.
  */
-// export const AUTH_API_ENABLED: boolean = process.env.AUTH_API_ENABLED === 'true';
-export const AUTH_API_ENABLED: boolean = false;
+export const AUTH_API_ENABLED: boolean = process.env.AUTH_API_ENABLED === 'true';
+
 /**
  * Default token expiry duration: 12 hours in milliseconds (43,200,000 ms).
  */
