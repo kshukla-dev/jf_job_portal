@@ -224,7 +224,7 @@ export interface VacancyFilterParams {
   itemsPerPage?: number;
   keywords?: string;
   category?: number | string;
-  country?: 'nl' | 'be' | 'lu' | 'fr' | 'de' | 'gb' | 'au' | 'at' | string;
+  country?: 'nl' | string;
   radius?: string | number;
   zipcode?: string;
   published?: boolean;
@@ -237,21 +237,6 @@ export interface VacancyFilterParams {
  */
 export function buildVacanciesUrl(params: VacancyFilterParams = {}): string {
   const query = new URLSearchParams();
-  if (params.page !== undefined) query.set('page', String(params.page));
-  if (params.itemsPerPage !== undefined) query.set('itemsPerPage', String(params.itemsPerPage));
-  if (params.keywords) query.set('keywords', params.keywords);
-  if (params.category !== undefined) query.set('VacancyCategory', String(params.category));
-  if (params.country) query.set('geo-country', params.country);
-  if (params.radius !== undefined) query.set('geo-radius', String(params.radius));
-  if (params.zipcode) query.set('geo-zipcode', params.zipcode);
-  if (params.published !== undefined) query.set('published', String(params.published));
-  if (params.includeUnpublishedTextfields !== undefined) {
-    query.set('includeUnpublishedTextfields', String(params.includeUnpublishedTextfields));
-  }
-  if (Array.isArray(params.publishedLanguage)) {
-    params.publishedLanguage.forEach((lang) => query.append('publishedLanguage[]', lang));
-  }
-
   const queryString = query.toString();
   return queryString ? `${API_ENDPOINTS.vacancies.list}?${queryString}` : API_ENDPOINTS.vacancies.list;
 }
