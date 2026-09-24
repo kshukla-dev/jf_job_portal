@@ -2,13 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Job } from '@/types/job';
 import { cleanRichHtml, translateDutchToEnglish } from '@/lib/utils';
 import styles from './JobDetails.module.css';
 
 interface JobDetailsProps {
   job: Job;
+  similarJobs?: Job[];
 }
 
 /**
@@ -17,7 +17,7 @@ interface JobDetailsProps {
  */
 function ExpandableContent({
   children,
-  maxHeight = 280,
+  maxHeight = 260,
 }: {
   children: React.ReactNode;
   maxHeight?: number;
@@ -29,7 +29,7 @@ function ExpandableContent({
   useEffect(() => {
     const el = contentRef.current;
     if (el) {
-      if (el.scrollHeight > maxHeight + 40) {
+      if (el.scrollHeight > maxHeight + 30) {
         setIsOverflowing(true);
       } else {
         setIsOverflowing(false);
@@ -79,22 +79,33 @@ function ExpandableContent({
   );
 }
 
-export function JobDetails({ job }: JobDetailsProps) {
-  const [applied, setApplied] = useState(false);
+export function JobDetails({ job, similarJobs = [] }: JobDetailsProps) {
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // English translation and content cleaning
+  // Form State
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [formError, setFormError] = useState('');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clean HTML from OTYS
   const cleanedOverview = cleanRichHtml(job.overviewHtml);
   const cleanedJobDesc = cleanRichHtml(job.jobDescriptionHtml);
   const cleanedRequirements = cleanRichHtml(job.requirementsHtml);
   const cleanedBenefits = cleanRichHtml(job.benefitsHtml);
-  const cleanedCompanyProfile = cleanRichHtml(job.companyProfileHtml);
 
-  const displayType = translateDutchToEnglish(job.type || 'Permanent');
+  const displayType = translateDutchToEnglish(job.type || 'Full Time');
   const displayHours = translateDutchToEnglish(job.hoursPerWeek || '');
   const displayLanguage = translateDutchToEnglish(job.language || '');
-  const displayEducation = translateDutchToEnglish(job.education || '');
+  const displayWorkModel = job.region ? translateDutchToEnglish(job.region) : 'Hybrid';
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
@@ -104,152 +115,225 @@ export function JobDetails({ job }: JobDetailsProps) {
     }
   };
 
-  const handleApplyClick = () => {
-    if (job.customApplyUrl) {
-      window.open(job.customApplyUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      setApplied(true);
+  const scrollToApply = () => {
+    const el = document.getElementById('application-form');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCvFile(e.target.files[0]);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setCvFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleSubmitApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!firstName.trim()) {
+      setFormError('Please enter your first name.');
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setFormError('Please enter your last name.');
+      return;
+    }
+
+    const cleanPhone = phone.trim();
+    if (!cleanPhone) {
+      setFormError('Please enter your phone number.');
+      return;
+    }
+    const digits = cleanPhone.replace(/\D/g, '');
+    if (digits.length < 7) {
+      setFormError('Please enter a valid phone number.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!cvFile) {
+      setFormError('CV is mandatory. Please upload your CV (.pdf, .doc, .docx).');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setFormError('Please agree with the privacy conditions before submitting.');
+      return;
+    }
+
+    try {
+      setFormStatus('submitting');
+
+      // 1. Data set karna (FormData create kiya)
+      const formData = new FormData();
+      formData.append('jobId', String(job.id));
+      formData.append('jobTitle', job.title);
+      formData.append('firstName', firstName.trim());
+      formData.append('lastName', lastName.trim());
+      formData.append('phone', phone.trim());
+      formData.append('email', email.trim());
+      if (cvFile) {
+        formData.append('cv', cvFile);
+      }
+
+      // 2. Normal POST API call karna
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit application. Please try again.');
+      }
+
+      // 3. Success state aur form clear karna
+      setFormStatus('success');
+      setFirstName('');
+      setLastName('');
+      setPhone('');
+      setEmail('');
+      setCvFile(null);
+      setAgreedToTerms(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to submit application';
+      setFormError(message);
+      setFormStatus('error');
     }
   };
 
   return (
     <div className={styles.container}>
-      {/* 1. Breadcrumbs */}
-      <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
-        <Link href="/" className={styles.breadcrumbLink}>Home</Link>
-        <span className={styles.breadcrumbSeparator}>/</span>
-        <Link href="/vacancies" className={styles.breadcrumbLink}>Vacancies</Link>
-        <span className={styles.breadcrumbSeparator}>/</span>
-        <span className={styles.breadcrumbCurrent}>{job.title}</span>
-      </nav>
+      {/* 1. Breadcrumbs + Top Action Buttons */}
+      <div className={styles.topBar}>
+        <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+          <Link href="/" className={styles.breadcrumbLink}>Home</Link>
+          <span className={styles.breadcrumbSeparator}>/</span>
+          <Link href="/vacancies" className={styles.breadcrumbLink}>Vacancies</Link>
+          <span className={styles.breadcrumbSeparator}>/</span>
+          <span className={styles.breadcrumbCurrent}>{job.title}</span>
+        </nav>
 
-      {/* 2. Top Header Hero Card */}
-      <header className={styles.heroCard}>
-        <div className={styles.heroMain}>
-          <div className={styles.badgeRow}>
-            <span className={styles.typeBadge}>{displayType}</span>
-            {job.salary && <span className={styles.salaryBadge}>{job.salary}</span>}
-            {displayHours && <span className={styles.hoursBadge}>{displayHours}</span>}
-            {displayLanguage && <span className={styles.langBadge}>{displayLanguage}</span>}
-          </div>
-
-
-          <h1 className={styles.jobTitle}>{job.title}</h1>
-
-          <div className={styles.metaRow}>
-            <div className={styles.metaItem}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span>{job.company}</span>
-            </div>
-
-            <div className={styles.metaItem}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              <span>{job.location}</span>
-            </div>
-
-            <div className={styles.metaItem}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-              <span>Posted {job.postedTime}</span>
-            </div>
-
-            {job.industry && (
-              <div className={styles.metaItem}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                </svg>
-                <span>{job.industry}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className={styles.heroActions}>
+        <div className={styles.topActions}>
           <button
             type="button"
-            onClick={handleApplyClick}
-            className={`${styles.applyBtn} ${applied ? styles.appliedBtn : ''}`}
-            disabled={applied && !job.customApplyUrl}
+            onClick={handleShare}
+            className={styles.topActionBtn}
+            title="Share Vacancy"
           >
-            {applied && !job.customApplyUrl ? (
-              <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span>Application Submitted</span>
-              </>
-            ) : (
-              <>
-                <span>Apply for Position</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </>
-            )}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>{copied ? 'Copied Link!' : 'Share'}</span>
           </button>
 
-          <div className={styles.subActions}>
-            <button
-              type="button"
-              onClick={() => setSaved(!saved)}
-              className={`${styles.iconActionBtn} ${saved ? styles.savedActive : ''}`}
-              title={saved ? 'Job Saved' : 'Save Job'}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <span>{saved ? 'Saved' : 'Save'}</span>
-            </button>
+          <button
+            type="button"
+            onClick={() => setSaved(!saved)}
+            className={`${styles.topActionBtn} ${saved ? styles.savedActive : ''}`}
+            title={saved ? 'Job Saved' : 'Save Job'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>{saved ? 'Saved' : 'Save'}</span>
+          </button>
+        </div>
+      </div>
 
-            <button
-              type="button"
-              onClick={handleShare}
-              className={styles.iconActionBtn}
-              title="Share Vacancy"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-              </svg>
-              <span>{copied ? 'Copied!' : 'Share'}</span>
-            </button>
+      {/* 2. Top Header Job Box */}
+      <header className={styles.headerCard}>
+        <h1 className={styles.jobTitle}>{job.title}</h1>
+
+        <div className={styles.companyRow}>
+          <div className={styles.companyIconBox}>
+            <span>JF</span>
+          </div>
+          <span className={styles.companyName}>
+            {job.company || 'Jackson & Frank Client'}
+          </span>
+          <span className={styles.verifiedBadge}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Verified</span>
+          </span>
+        </div>
+
+        <div className={styles.metaRow}>
+          <div className={styles.metaItem}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>{job.location}</span>
+          </div>
+
+          <div className={styles.metaItem}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <span>{displayType}</span>
+          </div>
+
+          <div className={styles.metaItem}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>{displayWorkModel}</span>
+          </div>
+
+          <div className={styles.metaItem}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="9" x2="20" y2="9"></line>
+              <line x1="4" y1="15" x2="20" y2="15"></line>
+              <line x1="10" y1="3" x2="8" y2="21"></line>
+              <line x1="16" y1="3" x2="14" y2="21"></line>
+            </svg>
+            <span>Ref: {job.id}</span>
           </div>
         </div>
       </header>
 
-      {/* 3. Two-Column Layout */}
+      {/* 3. Main Two-Column Layout */}
       <div className={styles.layout}>
-        {/* Main Content (Left Column) */}
+        {/* Left Column: Job Details & Application Form */}
         <main className={styles.mainColumn}>
-          {/* Section: Overview / Role Summary */}
-          {(cleanedOverview || job.description) && (
-            <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>Overview & Role Summary</h2>
-              </div>
+          {/* Card: Job Description (with Show More) */}
+          <section className={styles.cardSection}>
+            <h2 className={styles.cardTitle}>Job Description</h2>
+            <p className={styles.cardSubtitle}>About the Role</p>
 
-              {cleanedOverview ? (
+            <ExpandableContent maxHeight={260}>
+              {cleanedJobDesc ? (
+                <div
+                  className={styles.richContent}
+                  dangerouslySetInnerHTML={{ __html: cleanedJobDesc }}
+                />
+              ) : cleanedOverview ? (
                 <div
                   className={styles.richContent}
                   dangerouslySetInnerHTML={{ __html: cleanedOverview }}
@@ -257,385 +341,527 @@ export function JobDetails({ job }: JobDetailsProps) {
               ) : (
                 <p className={styles.plainText}>{job.description}</p>
               )}
-            </section>
-          )}
+            </ExpandableContent>
+          </section>
 
-          {/* Section: Job Description & Responsibilities (with Show More) */}
-          {(cleanedJobDesc || (job.responsibilities && job.responsibilities.length > 0)) && (
+          {/* Card: Key Responsibilities (if available) */}
+          {((job.responsibilities && job.responsibilities.length > 0) || cleanedOverview) && (
             <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>Job Description & Key Responsibilities</h2>
-              </div>
-
-              <ExpandableContent maxHeight={280}>
-                {cleanedJobDesc ? (
-                  <div
-                    className={styles.richContent}
-                    dangerouslySetInnerHTML={{ __html: cleanedJobDesc }}
-                  />
-                ) : (
-                  <ul className={styles.bulletList}>
-                    {job.responsibilities?.map((item, idx) => (
-                      <li key={idx}>{item}</li>
-                    ))}
-                  </ul>
-                )}
-              </ExpandableContent>
-            </section>
-          )}
-
-          {/* Section: Candidate Requirements (with Show More) */}
-          {(cleanedRequirements || (job.requirements && job.requirements.length > 0)) && (
-            <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>Candidate Requirements & Qualifications</h2>
-              </div>
-
-              <ExpandableContent maxHeight={280}>
-                {cleanedRequirements ? (
-                  <div
-                    className={styles.richContent}
-                    dangerouslySetInnerHTML={{ __html: cleanedRequirements }}
-                  />
-                ) : (
-                  <ul className={styles.bulletList}>
-                    {job.requirements?.map((req, idx) => (
-                      <li key={idx}>{req}</li>
-                    ))}
-                  </ul>
-                )}
-              </ExpandableContent>
-            </section>
-          )}
-
-          {/* Section: Compensation & Benefits */}
-          {cleanedBenefits && (
-            <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 12 20 22 4 22 4 12"></polyline>
-                    <rect x="2" y="7" width="20" height="5"></rect>
-                    <line x1="12" y1="22" x2="12" y2="7"></line>
-                    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
-                    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>Benefits & Perks</h2>
-              </div>
-
-              <div
-                className={styles.richContent}
-                dangerouslySetInnerHTML={{ __html: cleanedBenefits }}
-              />
-            </section>
-          )}
-
-          {/* Section: Company Profile */}
-          {cleanedCompanyProfile && (
-            <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 21h18"></path>
-                    <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
-                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                    <line x1="9" y1="13" x2="9.01" y2="13"></line>
-                    <line x1="15" y1="13" x2="15.01" y2="13"></line>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>About the Employer & Team Culture</h2>
-              </div>
-
-              <div
-                className={styles.richContent}
-                dangerouslySetInnerHTML={{ __html: cleanedCompanyProfile }}
-              />
-            </section>
-          )}
-
-          {/* Section: Technical Competencies & Skills */}
-          {job.skills && job.skills.length > 0 && (
-            <section className={styles.cardSection}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionIcon}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                    <polyline points="2 17 12 22 22 17"></polyline>
-                    <polyline points="2 12 12 17 22 12"></polyline>
-                  </svg>
-                </div>
-                <h2 className={styles.sectionTitle}>Required Skills & Technical Competencies</h2>
-              </div>
-
-              <div className={styles.skillsCloud}>
-                {job.skills.map((skill, idx) => (
-                  <span key={`${skill}-${idx}`} className={styles.skillPill}>
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Bottom Apply Box */}
-          <div className={styles.bottomApplyBox}>
-            <div className={styles.bottomApplyContent}>
-              <h3 className={styles.bottomApplyTitle}>Interested in this opportunity?</h3>
-              <p className={styles.bottomApplyDesc}>
-                Take the next step in your career. Submit your application today and our recruitment team will review your qualifications.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleApplyClick}
-              className={styles.applyBtn}
-              disabled={applied && !job.customApplyUrl}
-            >
-              {applied && !job.customApplyUrl ? 'Application Submitted ✓' : 'Apply Now'}
-            </button>
-          </div>
-        </main>
-
-        {/* Sidebar (Right Column) */}
-        <aside className={styles.sidebar}>
-          {/* Card 1: Job Summary Information */}
-          <div className={styles.sidebarCard}>
-            <h3 className={styles.sidebarTitle}>Job Overview</h3>
-
-            <div className={styles.overviewList}>
-              {job.salary && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="1" x2="12" y2="23"></line>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Salary / Rate</span>
-                    <span className={styles.overviewValue}>{job.salary}</span>
-                  </div>
-                </div>
+              <h2 className={styles.cardTitle}>Key Responsibilities</h2>
+              {job.responsibilities && job.responsibilities.length > 0 ? (
+                <ul className={styles.checklist}>
+                  {job.responsibilities.map((resp, idx) => (
+                    <li key={idx} className={styles.checkItem}>
+                      <span className={styles.checkIcon}>✓</span>
+                      <span>{resp}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : cleanedOverview && cleanedJobDesc ? (
+                <div
+                  className={styles.richContent}
+                  dangerouslySetInnerHTML={{ __html: cleanedOverview }}
+                />
+              ) : (
+                <ul className={styles.checklist}>
+                  <li className={styles.checkItem}>
+                    <span className={styles.checkIcon}>✓</span>
+                    <span>Lead end-to-end integration architecture and ensure high scalability.</span>
+                  </li>
+                  <li className={styles.checkItem}>
+                    <span className={styles.checkIcon}>✓</span>
+                    <span>Collaborate with cross-functional global teams and client stakeholders.</span>
+                  </li>
+                  <li className={styles.checkItem}>
+                    <span className={styles.checkIcon}>✓</span>
+                    <span>Maintain documentation, code quality, and best industry practices.</span>
+                  </li>
+                </ul>
               )}
+            </section>
+          )}
 
-              <div className={styles.overviewItem}>
-                <div className={styles.overviewIconWrap}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {/* Card: Required Skills & Qualifications */}
+          <section className={styles.cardSection}>
+            <h2 className={styles.cardTitle}>Required Skills & Qualifications</h2>
+            {job.requirements && job.requirements.length > 0 ? (
+              <ul className={styles.checklist}>
+                {job.requirements.map((req, idx) => (
+                  <li key={idx} className={styles.checkItem}>
+                    <span className={styles.checkIcon}>✓</span>
+                    <span>{req}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : cleanedRequirements ? (
+              <div
+                className={styles.richContent}
+                dangerouslySetInnerHTML={{ __html: cleanedRequirements }}
+              />
+            ) : (
+              <ul className={styles.checklist}>
+                {job.skills && job.skills.length > 0 ? (
+                  job.skills.map((skill, idx) => (
+                    <li key={idx} className={styles.checkItem}>
+                      <span className={styles.checkIcon}>✓</span>
+                      <span>Demonstrated expertise and hands-on experience in <strong>{skill}</strong>.</span>
+                    </li>
+                  ))
+                ) : (
+                  <>
+                    <li className={styles.checkItem}>
+                      <span className={styles.checkIcon}>✓</span>
+                      <span>Relevant degree or equivalent practical industry experience.</span>
+                    </li>
+                    <li className={styles.checkItem}>
+                      <span className={styles.checkIcon}>✓</span>
+                      <span>Strong analytical and problem-solving mindset.</span>
+                    </li>
+                    <li className={styles.checkItem}>
+                      <span className={styles.checkIcon}>✓</span>
+                      <span>Fluent professional communication in English (verbal and written).</span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            )}
+          </section>
+
+          {/* Card: Nice to Have */}
+          <section className={styles.cardSection}>
+            <h2 className={styles.cardTitle}>Nice to Have</h2>
+            <ul className={styles.checklist}>
+              <li className={styles.checkItem}>
+                <span className={styles.checkIcon}>✓</span>
+                <span>Experience working with agile methodologies, Scrum, and CI/CD pipelines.</span>
+              </li>
+              <li className={styles.checkItem}>
+                <span className={styles.checkIcon}>✓</span>
+                <span>Prior experience in cross-border international team collaboration.</span>
+              </li>
+              <li className={styles.checkItem}>
+                <span className={styles.checkIcon}>✓</span>
+                <span>Relevant industry certifications or advanced training.</span>
+              </li>
+            </ul>
+          </section>
+
+          {/* Card: Compensation & Benefits */}
+          <section className={styles.cardSection}>
+            <h2 className={styles.cardTitle}>Compensation & Benefits</h2>
+
+            <div className={styles.compGrid}>
+              {/* Box 1: Base Salary */}
+              <div className={styles.compBox}>
+                <div className={styles.compIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                  </svg>
+                </div>
+                <span className={styles.compLabel}>Base Salary</span>
+                <span className={styles.compValue}>{job.salary || 'Competitive / Neg.'}</span>
+              </div>
+
+              {/* Box 2: Job Type */}
+              <div className={styles.compBox}>
+                <div className={styles.compIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                   </svg>
                 </div>
-                <div>
-                  <span className={styles.overviewLabel}>Employment Type</span>
-                  <span className={styles.overviewValue}>{displayType}</span>
-                </div>
+                <span className={styles.compLabel}>Job Type</span>
+                <span className={styles.compValue}>{displayType}</span>
               </div>
 
-              {displayHours && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Hours / Week</span>
-                    <span className={styles.overviewValue}>{displayHours}</span>
-                  </div>
+              {/* Box 3: Work Model */}
+              <div className={styles.compBox}>
+                <div className={styles.compIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
                 </div>
-              )}
+                <span className={styles.compLabel}>Work Model</span>
+                <span className={styles.compValue}>{displayWorkModel}</span>
+              </div>
 
-              <div className={styles.overviewItem}>
-                <div className={styles.overviewIconWrap}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {/* Box 4: Location */}
+              <div className={styles.compBox}>
+                <div className={styles.compIcon}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                     <circle cx="12" cy="10" r="3"></circle>
                   </svg>
                 </div>
-                <div>
-                  <span className={styles.overviewLabel}>Location</span>
-                  <span className={styles.overviewValue}>{job.location}</span>
-                </div>
-              </div>
-
-              {job.role && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                      <polyline points="2 17 12 22 22 17"></polyline>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Role / Function</span>
-                    <span className={styles.overviewValue}>{job.role}</span>
-                  </div>
-                </div>
-              )}
-
-              {displayEducation && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                      <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Education Level</span>
-                    <span className={styles.overviewValue}>{displayEducation}</span>
-                  </div>
-                </div>
-              )}
-
-              {displayLanguage && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <line x1="2" y1="12" x2="22" y2="12"></line>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Language</span>
-                    <span className={styles.overviewValue}>{displayLanguage}</span>
-                  </div>
-                </div>
-              )}
-
-              {job.region && (
-                <div className={styles.overviewItem}>
-                  <div className={styles.overviewIconWrap}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-                      <line x1="8" y1="2" x2="8" y2="18"></line>
-                      <line x1="16" y1="6" x2="16" y2="22"></line>
-                    </svg>
-                  </div>
-                  <div>
-                    <span className={styles.overviewLabel}>Region</span>
-                    <span className={styles.overviewValue}>{job.region}</span>
-                  </div>
-                </div>
-              )}
-
-              <div className={styles.overviewItem}>
-                <div className={styles.overviewIconWrap}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                </div>
-                <div>
-                  <span className={styles.overviewLabel}>Date Posted</span>
-                  <span className={styles.overviewValue}>{job.postedTime}</span>
-                </div>
+                <span className={styles.compLabel}>Location</span>
+                <span className={styles.compValue}>{job.location}</span>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleApplyClick}
-              className={styles.sidebarApplyBtn}
-              disabled={applied && !job.customApplyUrl}
-            >
-              {applied && !job.customApplyUrl ? 'Applied ✓' : 'Apply Now'}
-            </button>
-          </div>
+            {cleanedBenefits && (
+              <div
+                className={`${styles.richContent} ${styles.benefitsExtra}`}
+                dangerouslySetInnerHTML={{ __html: cleanedBenefits }}
+              />
+            )}
+          </section>
 
-          {/* Card 2: Hiring Consultant Card (When available from OTYS) */}
-          {job.consultant && job.consultant.name && (
-            <div className={styles.sidebarCard}>
-              <h3 className={styles.sidebarTitle}>Hiring Consultant</h3>
-
-              <div className={styles.consultantHeader}>
-                {job.consultant.avatar ? (
-                  <img
-                    src={job.consultant.avatar}
-                    alt={job.consultant.name}
-                    className={styles.consultantAvatar}
-                  />
-                ) : (
-                  <div className={styles.consultantAvatarFallback}>
-                    {job.consultant.name.charAt(0)}
-                  </div>
-                )}
-                <div>
-                  <h4 className={styles.consultantName}>{job.consultant.name}</h4>
-                  <p className={styles.consultantRole}>{job.consultant.title}</p>
-                </div>
+          {/* Blue Discovery Banner */}
+          <div className={styles.discoveryBanner}>
+            <div className={styles.discoveryLeft}>
+              <div className={styles.discoveryIcon}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
               </div>
-
-              <p className={styles.consultantText}>
-                Have questions or need more details about this vacancy? Feel free to reach out directly.
-              </p>
-
-              <div className={styles.consultantActions}>
-                {job.consultant.email && (
-                  <a
-                    href={`mailto:${job.consultant.email}?subject=Inquiry regarding: ${job.title}`}
-                    className={styles.consultantContactBtn}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                      <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    <span>Send Email</span>
-                  </a>
-                )}
-
-                {job.consultant.phone && (
-                  <a
-                    href={`tel:${job.consultant.phone}`}
-                    className={styles.consultantPhoneBtn}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    <span>{job.consultant.phone}</span>
-                  </a>
-                )}
-              </div>
+              <span className={styles.discoveryText}>
+                Discover more {job.industry || 'IT'} opportunities in {job.city || 'Netherlands'}
+              </span>
             </div>
-          )}
-
-          {/* Card 3: Back to Search / Vacancies */}
-          <div className={styles.sidebarCard}>
-            <h4 className={styles.sidebarSubTitle}>Looking for other roles?</h4>
-            <p className={styles.sidebarText}>
-              Explore our wide range of global tech and consulting opportunities.
-            </p>
-            <Link href="/vacancies" className={styles.allVacanciesLink}>
-              <span>Browse All Vacancies</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <Link href="/vacancies" className={styles.discoveryLink}>
+              <span>Explore similar roles</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </Link>
           </div>
+        </main>
+
+        {/* Right Column: Sidebar */}
+        <aside className={styles.sidebar}>
+          {/* Sidebar 1: Primary Action Card */}
+          <div className={styles.actionCard}>
+            <button
+              type="button"
+              onClick={scrollToApply}
+              className={styles.primaryApplyBtn}
+            >
+              <span>Apply Now</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+            <p className={styles.quickApplyNote}>
+              Takes only 2 minutes • Quick apply with your CV
+            </p>
+          </div>
+
+          {/* Sidebar 2: About the Company */}
+          <div className={styles.sidebarCard}>
+            <div className={styles.aboutHeader}>
+              <div className={styles.aboutLogoBox}>
+                <span>JF</span>
+              </div>
+              <div>
+                <div className={styles.aboutNameRow}>
+                  <h3 className={styles.aboutTitle}>Jackson & Frank Client</h3>
+                  <span className={styles.aboutVerifiedCheck}>✓</span>
+                </div>
+                <span className={styles.aboutClientBadge}>VERIFIED CLIENT</span>
+              </div>
+            </div>
+
+            <p className={styles.aboutDesc}>
+              Jackson & Frank is a global talent solutions partner connecting world-class engineering, finance, and specialized technology professionals with premier employers.
+            </p>
+
+            <div className={styles.companyMetaList}>
+              <div className={styles.companyMetaItem}>
+                <span className={styles.companyMetaIcon}>🏢</span>
+                <span className={styles.companyMetaText}>Industry: {job.industry || 'IT & Software'}</span>
+              </div>
+              <div className={styles.companyMetaItem}>
+                <span className={styles.companyMetaIcon}>👥</span>
+                <span className={styles.companyMetaText}>50 - 250 employees</span>
+              </div>
+              <div className={styles.companyMetaItem}>
+                <span className={styles.companyMetaIcon}>📍</span>
+                <span className={styles.companyMetaText}>Headquarters: {job.location || 'Netherlands'}</span>
+              </div>
+              <div className={styles.companyMetaItem}>
+                <span className={styles.companyMetaIcon}>🌐</span>
+                <a
+                  href="https://www.jacksonandfrank.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.companyWebLink}
+                >
+                  www.jacksonandfrank.com
+                </a>
+              </div>
+            </div>
+
+            <a
+              href="https://www.jacksonandfrank.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.viewProfileBtn}
+            >
+              <span>View Company Profile</span>
+              <span>→</span>
+            </a>
+          </div>
+
+          {/* Sidebar 3: Hiring Consultant */}
+          <div className={styles.sidebarCard}>
+            <div className={styles.consultantRow}>
+              <div className={styles.consultantAvatar}>
+                {job.consultant?.avatar ? (
+                  <img
+                    src={job.consultant.avatar}
+                    alt={job.consultant.name || 'Consultant'}
+                    className={styles.consultantImg}
+                  />
+                ) : (
+                  <span>{job.consultant?.name ? job.consultant.name.charAt(0) : 'M'}</span>
+                )}
+              </div>
+              <div>
+                <h4 className={styles.consultantName}>
+                  {job.consultant?.name || 'Michael van Beek'}
+                </h4>
+                <p className={styles.consultantRole}>
+                  {job.consultant?.title || 'Senior Talent Consultant'}
+                </p>
+                {job.consultant?.email ? (
+                  <a href={`mailto:${job.consultant.email}`} className={styles.consultantEmailLink}>
+                    {job.consultant.email}
+                  </a>
+                ) : (
+                  <a href="mailto:careers@jacksonandfrank.com" className={styles.consultantEmailLink}>
+                    careers@jacksonandfrank.com
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar 4: Similar Jobs */}
+          {similarJobs.length > 0 && (
+            <div className={styles.sidebarCard}>
+              <div className={styles.similarHeader}>
+                <h3 className={styles.sidebarSectionTitle}>Similar Jobs</h3>
+                <Link href="/vacancies" className={styles.viewAllSimilar}>
+                  View All
+                </Link>
+              </div>
+
+              <div className={styles.similarList}>
+                {similarJobs.map((sJob) => (
+                  <Link
+                    key={sJob.id}
+                    href={`/vacancies/${sJob.id}`}
+                    className={styles.similarItem}
+                  >
+                    <div className={styles.similarIconBox}>
+                      <span>JF</span>
+                    </div>
+                    <div className={styles.similarContent}>
+                      <h4 className={styles.similarTitle}>{sJob.title}</h4>
+                      <p className={styles.similarMeta}>
+                        {sJob.location} • {sJob.type}
+                      </p>
+                    </div>
+                    <span className={styles.similarArrow}>›</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sidebar 5: Get Job Alerts */}
+          <div className={styles.alertCard}>
+            <div className={styles.alertIconBox}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </div>
+            <h3 className={styles.alertTitle}>Get Job Alerts</h3>
+            <p className={styles.alertDesc}>
+              Be the first to know about new opportunities matching your profile.
+            </p>
+            <Link href="/job-alert" className={styles.alertBtn}>
+              Subscribe Now →
+            </Link>
+          </div>
         </aside>
       </div>
+
+      {/* 4. Full-Width Bottom Application Form */}
+      <section id="application-form" className={styles.formSection}>
+        <h2 className={styles.formTitle}>Interested? Send us your application!</h2>
+
+        {formStatus === 'success' ? (
+          <div className={styles.successMessage}>
+            <div className={styles.successIcon}>✓</div>
+            <h3>Application Submitted Successfully!</h3>
+            <p>
+              Thank you, {firstName || 'Applicant'}. We have received your application for{' '}
+              <strong>{job.title}</strong>. Our recruitment consultants will contact you shortly.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFormStatus('idle')}
+              className={styles.resetFormBtn}
+            >
+              Submit another application
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitApplication} className={styles.appForm}>
+            {formError && (
+              <div className={styles.formErrorBanner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <div className={styles.formGrid}>
+              {/* Left Column: Form Fields */}
+              <div className={styles.formInputsCol}>
+                <div className={styles.formRow}>
+                  <div className={styles.inputGroup}>
+                    <input
+                      type="text"
+                      required
+                      placeholder="First name *"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className={styles.formInput}
+                    />
+                  </div>
+
+                  <div className={styles.inputGroup}>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Last name *"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className={styles.formInput}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="Phone *"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={styles.formInput}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Email *"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={styles.formInput}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: CV Upload Box */}
+              <div className={styles.formUploadCol}>
+                <div
+                  className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+
+                  {cvFile ? (
+                    <div className={styles.uploadedFileBox}>
+                      <div className={styles.fileIcon}>📄</div>
+                      <div className={styles.fileDetails}>
+                        <span className={styles.fileName}>{cvFile.name}</span>
+                        <span className={styles.fileSize}>
+                          {(cvFile.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCvFile(null);
+                        }}
+                        className={styles.removeFileBtn}
+                        title="Remove File"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.dropZoneContent}>
+                      <div className={styles.uploadCloudIcon}>
+                        <svg width="48" height="42" viewBox="0 0 24 24" fill="none" stroke="#1E3A8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                          <path d="M12 12v8"></path>
+                          <path d="m16 15-4-4-4 4"></path>
+                        </svg>
+                      </div>
+                      <div className={styles.dropZoneTexts}>
+                        <span className={styles.uploadPrompt}>
+                          Upload CV <span className={styles.requiredStar}>*</span>
+                        </span>
+                        <span className={styles.uploadHint}>Drag & Drop or Browse</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Agreement Checkbox */}
+            <div className={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                id="terms"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className={styles.checkboxInput}
+              />
+              <label htmlFor="terms" className={styles.checkboxLabel}>
+                I agree with the privacy conditions.
+              </label>
+            </div>
+
+            {/* Submit Action */}
+            <button
+              type="submit"
+              disabled={formStatus === 'submitting'}
+              className={styles.submitAppBtn}
+            >
+              {formStatus === 'submitting' ? 'Submitting...' : 'Send application'}
+            </button>
+          </form>
+        )}
+      </section>
     </div>
   );
 }
