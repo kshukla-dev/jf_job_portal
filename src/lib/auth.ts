@@ -293,6 +293,7 @@ export async function requestNewToken(): Promise<string> {
         }
       }
     }
+    console.log('response');
 
     if (!response) {
       throw lastNetworkErr || new Error('Network request to auth endpoint timed out or failed');
