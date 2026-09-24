@@ -23,16 +23,33 @@
   margin-bottom: 16px;
 }
 
-.logoWrapper {
-  height: 32px;
+.badgeGroup {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.companyLogo {
-  max-height: 28px;
-  width: auto;
-  object-fit: contain;
+.typeBadge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0066FF;
+  background-color: #EFF6FF;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #DBEAFE;
+}
+
+.salaryBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+  background-color: #ECFDF5;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #A7F3D0;
 }
 
 .bookmarkBtn {
@@ -124,6 +141,27 @@
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   letter-spacing: 0.01em;
+}
+
+.moreSkillsBtn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0066FF;
+  background-color: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}
+
+.moreSkillsBtn:hover {
+  background-color: #0066FF;
+  color: #FFFFFF;
+  border-color: #0066FF;
 }
 
 .footer {

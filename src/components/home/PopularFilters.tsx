@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Container } from '@/components/common/Container';
 import { filterChips } from '@/data/jobs';
 import styles from './PopularFilters.module.css';
@@ -9,14 +10,17 @@ import styles from './PopularFilters.module.css';
 interface PopularFiltersProps {
   activeFilter?: string;
   onSelectFilter?: (filterId: string) => void;
+  onClear?: () => void;
   targetPath?: string;
 }
 
 export function PopularFilters({
   activeFilter = '',
   onSelectFilter,
+  onClear,
   targetPath = '/vacancies',
 }: PopularFiltersProps = {}) {
+  const router = useRouter();
   return (
     <div className={styles.wrapper}>
       <Container>
@@ -49,20 +53,28 @@ export function PopularFilters({
             })}
           </div>
 
-          <Link href={`${targetPath}?advanced=true`} className={styles.advancedLink}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="21" x2="4" y2="14"></line>
-              <line x1="4" y1="10" x2="4" y2="3"></line>
-              <line x1="12" y1="21" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12" y2="3"></line>
-              <line x1="20" y1="21" x2="20" y2="16"></line>
-              <line x1="20" y1="12" x2="20" y2="3"></line>
-              <line x1="1" y1="14" x2="7" y2="14"></line>
-              <line x1="9" y1="8" x2="15" y2="8"></line>
-              <line x1="17" y1="16" x2="23" y2="16"></line>
-            </svg>
-            <span>Advanced Search</span>
-          </Link>
+          <div className={styles.rightActions}>
+            <button
+              type="button"
+              onClick={() => {
+                if (onClear) {
+                  onClear();
+                } else if (onSelectFilter) {
+                  onSelectFilter('');
+                } else {
+                  router.push(targetPath);
+                }
+              }}
+              className={`${styles.clearFilterBtn} ${activeFilter ? styles.clearFilterBtnActive : ''}`}
+              title="Clear selected filter"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Clear Filter</span>
+            </button>
+          </div>
         </div>
       </Container>
     </div>

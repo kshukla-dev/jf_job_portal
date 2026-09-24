@@ -1,18 +1,613 @@
+/**
+ * Central API Configuration & Reusable Server-Side API Client
+ *
+ * Location: src/lib/api.ts
+ *
+ * Responsibilities:
+ * - Central registry for all external API endpoints
+ * - Secure server-side HTTP client (apiRequest & authenticatedFetch)
+ * - Automatic Bearer token injection using getValidToken()
+ * - Automatic 401 Unauthorized handling (token refresh + single retry)
+ * - Robust exception handling with fallback data support (serves stale/fallback data on error)
+ * - Preserves existing mock getters for blog, news, and vacancies
+ */
+
+import { getValidToken, getAuthConfig, clearToken } from '@/lib/auth';
 import { featuredJobs } from '@/data/jobs';
 import { blogPosts } from '@/data/blogs';
 import { newsArticles } from '@/data/news';
-import { Job } from '@/types/job';
+import { Job, EmploymentType } from '@/types/job';
 
-export async function getFeaturedJobs(): Promise<Job[]> {
-  return featuredJobs.filter((job) => job.isFeatured);
+// ============================================================================
+// 1. CENTRALIZED API ENDPOINTS
+// ============================================================================
+
+/**
+ * Central dictionary of all API endpoints.
+ * Reference: https://web.olx.app/api
+ *
+ * Whenever new endpoints are needed, define them here instead of
+ * hardcoding URLs across individual files.
+ */
+export const API_ENDPOINTS = {
+  auth: {
+    appAuth: '/auth',
+  },
+  vacancies: {
+    list: '/vacancies',
+    bySlug: (slug: string) => `/vacancies/slug/${slug}`,
+    details: (id: string | number) => `/vacancies/${id}`,
+  },
+} as const;
+
+// ============================================================================
+// 2. REUSABLE SERVER-SIDE API CLIENT & EXCEPTION HANDLING
+// ============================================================================
+
+export interface ApiRequestOptions<T = unknown> extends RequestInit {
+  /**
+   * Internal flag used to prevent infinite retry loops on 401 Unauthorized.
+   */
+  _hasRetried?: boolean;
+
+  /**
+   * Optional fallback data to serve if the request or authentication fails.
+   */
+  fallbackData?: T;
 }
 
-export async function getAllJobs(): Promise<Job[]> {
-  return featuredJobs;
+/**
+ * Builds a full absolute URL given an endpoint or absolute URL string.
+ */
+function resolveUrl(endpoint: string): string {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+  const { baseUrl } = getAuthConfig();
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // If baseUrl already ends with /api and endpoint also starts with /api/, prevent /api/api
+  if (baseUrl.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.replace(/^\/api/, '');
+  }
+
+  return `${baseUrl}${cleanEndpoint}`;
+}
+
+/**
+ * Low-level authenticated fetch wrapper.
+ *
+ * Features:
+ * 1. Obtains a valid Bearer token from auth.ts
+ * 2. Injects Authorization: Bearer <token>
+ * 3. Handles 401/403 or invalid token: automatically force-refreshes the token and retries once
+ * 4. Guards against infinite retry loops
+ *
+ * @param endpoint - Relative endpoint (e.g. '/vacancy') or absolute URL
+ * @param options - Standard fetch RequestInit options
+ */
+export async function authenticatedFetch(
+  endpoint: string,
+  options: ApiRequestOptions = {}
+): Promise<Response> {
+  const { _hasRetried = false, headers, ...restOptions } = options;
+
+  // 1. Get valid access token (retrieves cached token, requests new one, or serves stale fallback)
+  const token = await getValidToken();
+
+  // 2. Prepare headers with Authorization header
+  const reqHeaders = new Headers(headers);
+  if (!reqHeaders.has('Authorization')) {
+    reqHeaders.set('Authorization', `Bearer ${token}`);
+  }
+  if (!reqHeaders.has('Content-Type') && !(restOptions.body instanceof FormData)) {
+    reqHeaders.set('Content-Type', 'application/json');
+  }
+  if (!reqHeaders.has('Accept')) {
+    reqHeaders.set('Accept', 'application/ld+json, application/json');
+  }
+
+  // 3. Attach Required Website-ID header for OTYS context
+  const { websiteId } = getAuthConfig();
+  if (!reqHeaders.has('Website-ID') && websiteId) {
+    reqHeaders.set('Website-ID', websiteId);
+  }
+
+  const fullUrl = resolveUrl(endpoint);
+
+  // 3. Execute request with network-level exception handling & 1 automatic retry
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, {
+      ...restOptions,
+      headers: reqHeaders,
+    });
+  } catch (networkError: unknown) {
+    // Retry once after brief delay for intermittent network dropouts
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      response = await fetch(fullUrl, {
+        ...restOptions,
+        headers: reqHeaders,
+      });
+    } catch {
+      const message = networkError instanceof Error ? networkError.message : String(networkError);
+      console.error(`[API Client Network Error] Request to '${fullUrl}' failed:`, message);
+      throw networkError;
+    }
+  }
+
+  // 4. Handle 401 Unauthorized / Invalid Token: Refresh token and retry once
+  if (response.status === 401 && !_hasRetried) {
+    console.warn('[API Client] 401 Unauthorized / Invalid Token received. Forcing token refresh and retrying once...');
+    try {
+      // Invalidate current token and force-fetch a new valid token
+      await clearToken();
+      await getValidToken(true);
+
+      // Retry request with _hasRetried guard set to true
+      return await authenticatedFetch(endpoint, {
+        ...options,
+        _hasRetried: true,
+      });
+    } catch (refreshError) {
+      console.error('[API Client] Token refresh during 401 retry failed:', refreshError);
+      return response;
+    }
+  }
+
+  return response;
+}
+
+/**
+ * High-level typed API helper with fallback data support.
+ *
+ * Calls authenticatedFetch, validates response status, parses JSON, and returns typed result.
+ * If the request or authentication fails (including after 5 auth retries):
+ * - If fallbackData is provided (via parameter or option), returns fallbackData without crashing.
+ * - Otherwise, throws an informative Error.
+ *
+ * Example usage:
+ * ```ts
+ * // With fallback data
+ * const data = await apiRequest(API_ENDPOINTS.vacancies.list, { method: 'GET' }, fallbackVacancies);
+ *
+ * // Or without fallback (throws on error)
+ * const data = await apiRequest(API_ENDPOINTS.users.list);
+ * ```
+ */
+export async function apiRequest<T = unknown>(
+  endpoint: string,
+  options?: ApiRequestOptions<T>,
+  fallbackData?: T
+): Promise<T> {
+  const effectiveFallback = fallbackData !== undefined ? fallbackData : options?.fallbackData;
+
+  try {
+    const response = await authenticatedFetch(endpoint, options);
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      throw new Error(
+        `API request to '${endpoint}' failed [${response.status} ${response.statusText}]: ${errorBody}`
+      );
+    }
+
+    // Handle empty 204 No Content responses
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    return (await response.json()) as T;
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // If fallback data was provided, serve it gracefully
+    if (effectiveFallback !== undefined) {
+      console.warn(
+        `[API Client Fallback] Request to '${endpoint}' failed (${errorMsg}). Serving provided fallback data.`
+      );
+      return effectiveFallback;
+    }
+
+    // Otherwise propagate the exception
+    throw error;
+  }
+}
+
+// ============================================================================
+// 3. OTYS VACANCY DATA ADAPTER & QUERY PARAMS
+// ============================================================================
+
+export interface VacancyFilterParams {
+  page?: number;
+  itemsPerPage?: number;
+  keywords?: string;
+  category?: number | string;
+  country?: 'nl' | 'be' | 'lu' | 'fr' | 'de' | 'gb' | 'au' | 'at' | string;
+  radius?: string | number;
+  zipcode?: string;
+  published?: boolean;
+  publishedLanguage?: string[];
+  includeUnpublishedTextfields?: boolean;
+}
+
+/**
+ * Builds URL with query parameters supported by OTYS Vacancies API
+ */
+export function buildVacanciesUrl(params: VacancyFilterParams = {}): string {
+  const query = new URLSearchParams();
+  if (params.page !== undefined) query.set('page', String(params.page));
+  if (params.itemsPerPage !== undefined) query.set('itemsPerPage', String(params.itemsPerPage));
+  if (params.keywords) query.set('keywords', params.keywords);
+  if (params.category !== undefined) query.set('VacancyCategory', String(params.category));
+  if (params.country) query.set('geo-country', params.country);
+  if (params.radius !== undefined) query.set('geo-radius', String(params.radius));
+  if (params.zipcode) query.set('geo-zipcode', params.zipcode);
+  if (params.published !== undefined) query.set('published', String(params.published));
+  if (params.includeUnpublishedTextfields !== undefined) {
+    query.set('includeUnpublishedTextfields', String(params.includeUnpublishedTextfields));
+  }
+  if (Array.isArray(params.publishedLanguage)) {
+    params.publishedLanguage.forEach((lang) => query.append('publishedLanguage[]', lang));
+  }
+
+  const queryString = query.toString();
+  return queryString ? `${API_ENDPOINTS.vacancies.list}?${queryString}` : API_ENDPOINTS.vacancies.list;
+}
+
+/**
+ * Maps raw OTYS API vacancy JSON to our clean frontend Job interface.
+ * Hides raw API response structure and internal fields.
+ */
+export function mapOtysVacancyToJob(raw: any): Job {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      id: '',
+      slug: '',
+      title: 'Unknown',
+      company: 'Jackson & Frank',
+      companyLogo: '/images/logos/jackson-frank-logo.svg',
+      location: 'Netherlands',
+      country: 'Netherlands',
+      city: '',
+      type: 'Full Time',
+      experience: 'Experienced',
+      skills: ['Consulting', 'Integration'],
+      postedTime: 'Recently',
+    };
+  }
+
+  // Already our Job type?
+  if (raw.id && raw.slug && raw.title && raw.company && raw.companyLogo) {
+    return raw as Job;
+  }
+
+  const id = String(raw.id || raw.vacancyId || raw._id || Math.random().toString(36).substring(2, 9));
+  const title = String(raw.title || raw.name || raw.vacancyTitle || 'Untitled Position');
+  const slug = String(raw.slug || raw.customSlug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || id);
+  const company = String(raw.company || raw.relation?.name || 'Jackson & Frank');
+  const city = String(raw.location || raw.city || '');
+  const country = 'Netherlands';
+  const location = city ? `${city}, ${country}` : country;
+
+  // Extract Skills from matchCriteria
+  let skills: string[] = [];
+  let type: EmploymentType = 'Full Time';
+  let salary: string | undefined = undefined;
+  let industry: string | undefined = undefined;
+  let experience = '3–5 Yrs';
+
+  if (Array.isArray(raw.matchCriteria)) {
+    // 1. Skills
+    const skillsCriterion = raw.matchCriteria.find(
+      (c: any) => c.name?.toLowerCase().includes('skills') || c.id === 2
+    );
+    if (skillsCriterion && Array.isArray(skillsCriterion.options)) {
+      skills = skillsCriterion.options.map((o: any) => o.name).filter(Boolean);
+    }
+
+    // 2. Contract Type
+    const contractCriterion = raw.matchCriteria.find(
+      (c: any) => c.name?.toLowerCase().includes('contract') || c.id === 5
+    );
+    if (contractCriterion && Array.isArray(contractCriterion.options) && contractCriterion.options[0]?.name) {
+      const typeStr = contractCriterion.options[0].name.toLowerCase();
+      if (typeStr.includes('permanent')) type = 'Permanent';
+      else if (typeStr.includes('contract')) type = 'Contract';
+      else if (typeStr.includes('part')) type = 'Part Time';
+      else if (typeStr.includes('remote')) type = 'Remote';
+    }
+
+    // 3. Salary
+    const salaryCriterion = raw.matchCriteria.find(
+      (c: any) => c.name?.toLowerCase().includes('salary') || c.id === 7
+    );
+    if (salaryCriterion && Array.isArray(salaryCriterion.options) && salaryCriterion.options[0]?.name) {
+      salary = `€${salaryCriterion.options[0].name}k / yr`;
+    }
+
+    // 4. Industry / Branche
+    const brancheCriterion = raw.matchCriteria.find(
+      (c: any) => c.name?.toLowerCase().includes('branche') || c.id === 1
+    );
+    if (brancheCriterion && Array.isArray(brancheCriterion.options) && brancheCriterion.options[0]?.name) {
+      industry = brancheCriterion.options[0].name;
+    }
+
+    // 5. Education Level / Experience
+    const eduCriterion = raw.matchCriteria.find(
+      (c: any) => c.name?.toLowerCase().includes('education') || c.id === 10
+    );
+    if (eduCriterion && Array.isArray(eduCriterion.options) && eduCriterion.options[0]?.name) {
+      experience = eduCriterion.options[0].name;
+    }
+  }
+
+  if (skills.length === 0) {
+    skills = ['Agile', 'Scrum', 'Application'];
+  }
+
+  // Extract rich textfields from OTYS payload
+  let overviewHtml: string | undefined = undefined;
+  let jobDescriptionHtml: string | undefined = undefined;
+  let requirementsHtml: string | undefined = undefined;
+  let companyProfileHtml: string | undefined = undefined;
+  let benefitsHtml: string | undefined = undefined;
+  let description: string | undefined = undefined;
+
+  if (Array.isArray(raw.textfields)) {
+    const summaryField = raw.textfields.find(
+      (t: any) => t.type === 'textField_summary' || t.name?.toLowerCase().includes('summary') || t.name?.toLowerCase().includes('short description')
+    );
+    if (summaryField?.value) {
+      overviewHtml = summaryField.value;
+      description = summaryField.value.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    const descField = raw.textfields.find(
+      (t: any) => t.type === 'textField_description' || t.name?.toLowerCase().includes('job description')
+    );
+    if (descField?.value) {
+      jobDescriptionHtml = descField.value;
+      if (!description) {
+        description = descField.value.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+      }
+    }
+
+    const reqField = raw.textfields.find(
+      (t: any) => t.type === 'textField_requirements' || t.name?.toLowerCase().includes('requirements')
+    );
+    if (reqField?.value) {
+      requirementsHtml = reqField.value;
+    }
+
+    const compField = raw.textfields.find(
+      (t: any) => t.type === 'textField_companyProfile' || t.name?.toLowerCase().includes('company')
+    );
+    if (compField?.value) {
+      companyProfileHtml = compField.value;
+    }
+
+    const benField = raw.textfields.find(
+      (t: any) => t.type === 'textField_salary' || t.name?.toLowerCase().includes('benefit') || t.name?.toLowerCase().includes('salary')
+    );
+    if (benField?.value) {
+      benefitsHtml = benField.value;
+    }
+  }
+
+  // Extract Consultant / Recruiter Details
+  let consultant: Job['consultant'] = undefined;
+  if (raw.user && (raw.user.firstName || raw.user.lastName || raw.user.email)) {
+    const nameParts = [raw.user.firstName, raw.user.infix, raw.user.lastName].filter(Boolean);
+    const consultantPhone = Array.isArray(raw.user.phoneNumbers)
+      ? raw.user.phoneNumbers.find((p: any) => p.number?.trim())?.number
+      : undefined;
+
+    consultant = {
+      name: nameParts.join(' '),
+      title: raw.user.jobTitle || 'Recruitment Consultant',
+      email: raw.user.email,
+      phone: consultantPhone,
+      avatar: raw.user.profilePicture || undefined,
+    };
+  }
+
+  // Extract Additional MatchCriteria (Role, Language, Hours, Region)
+  let role: string | undefined = undefined;
+  let language: string | undefined = undefined;
+  let hoursPerWeek: string | undefined = undefined;
+  let region: string | undefined = undefined;
+
+  if (Array.isArray(raw.matchCriteria)) {
+    const roleCrit = raw.matchCriteria.find((c: any) => c.name?.toLowerCase().includes('role') || c.id === 15);
+    if (roleCrit?.options?.length) role = roleCrit.options.map((o: any) => o.name).filter(Boolean).join(', ');
+
+    const langCrit = raw.matchCriteria.find((c: any) => c.name?.toLowerCase().includes('language') || c.id === 3);
+    if (langCrit?.options?.length) language = langCrit.options.map((o: any) => o.name).filter(Boolean).join(', ');
+
+    const hoursCrit = raw.matchCriteria.find((c: any) => c.name?.toLowerCase().includes('hours') || c.id === 4);
+    if (hoursCrit?.options?.length) hoursPerWeek = hoursCrit.options.map((o: any) => o.name).filter(Boolean).join(', ');
+
+    const regionCrit = raw.matchCriteria.find((c: any) => c.name?.toLowerCase().includes('region') || c.id === 6);
+    if (regionCrit?.options?.length) region = regionCrit.options.map((o: any) => o.name).filter(Boolean).join(', ');
+  }
+
+  // Calculate Posted Time
+  let postedTime = 'Recently';
+  if (raw.entryDateTime) {
+    const entryDate = new Date(raw.entryDateTime);
+    const diffDays = Math.floor((Date.now() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) postedTime = 'Today';
+    else if (diffDays === 1) postedTime = '1 day ago';
+    else postedTime = `${diffDays} days ago`;
+  }
+
+  // Safe fallback logos from public directory
+  const fallbackLogos = [
+    '/images/logos/asml.svg',
+    '/images/logos/ing.svg',
+    '/images/logos/philips.svg',
+    '/images/logos/adyen.svg',
+    '/images/logos/shell.svg',
+    '/images/logos/booking.svg',
+  ];
+  const logoIndex = Math.abs(id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % fallbackLogos.length;
+  const companyLogo = raw.companyLogo || raw.mainImage?.url || fallbackLogos[logoIndex];
+
+  return {
+    id,
+    slug,
+    title,
+    company,
+    companyLogo,
+    location,
+    country,
+    city,
+    type,
+    experience,
+    skills,
+    postedTime,
+    salary,
+    description,
+    industry,
+    isFeatured: true,
+
+    // Rich OTYS detailed fields
+    overviewHtml,
+    jobDescriptionHtml,
+    requirementsHtml,
+    companyProfileHtml,
+    benefitsHtml,
+    role,
+    education: experience,
+    language,
+    hoursPerWeek,
+    region,
+    branche: industry,
+    customApplyUrl: raw.customApplyUrl || undefined,
+    consultant,
+  };
+}
+
+/**
+ * Extracts and maps collection of vacancies from OTYS API payload
+ */
+export function mapOtysCollectionToJobs(data: any): Job[] {
+  if (!data) return [];
+
+  // If already mapped Job[] array (such as fallback data), return directly
+  if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && ('slug' in data[0] || 'postedTime' in data[0])) {
+    return data as Job[];
+  }
+
+  let list: any[] = [];
+  if (Array.isArray(data)) {
+    list = data;
+  } else if (Array.isArray(data.member)) {
+    // API Platform / OTYS JSON-LD format
+    list = data.member;
+  } else if (Array.isArray(data['hydra:member'])) {
+    list = data['hydra:member'];
+  } else if (Array.isArray(data.items)) {
+    list = data.items;
+  } else if (Array.isArray(data.data)) {
+    list = data.data;
+  } else if (Array.isArray(data.vacancies)) {
+    list = data.vacancies;
+  }
+
+  if (list.length === 0) return [];
+  return list.map(mapOtysVacancyToJob);
+}
+
+// ============================================================================
+// 4. CLEAN CONTENT DATA GETTERS (USED BY APPLICATION PAGES)
+// ============================================================================
+
+export async function getFeaturedJobs(filterParams?: VacancyFilterParams): Promise<Job[]> {
+  const fallback = featuredJobs.filter((job) => job.isFeatured);
+  const endpoint = buildVacanciesUrl(filterParams);
+
+  try {
+    const rawData = await apiRequest<any>(endpoint, { method: 'GET' }, fallback);
+    const jobs = mapOtysCollectionToJobs(rawData);
+    if (jobs.length > 0) {
+      const featured = jobs.filter((j) => j.isFeatured);
+      return featured.length > 0 ? featured : jobs;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function getAllJobs(filterParams?: VacancyFilterParams): Promise<Job[]> {
+  const endpoint = buildVacanciesUrl(filterParams);
+
+  try {
+    const rawData = await apiRequest<any>(endpoint, { method: 'GET' }, featuredJobs);
+    const jobs = mapOtysCollectionToJobs(rawData);
+    console.log("job data", jobs);
+
+    return jobs.length > 0 ? jobs : featuredJobs;
+  } catch {
+    console.log("job featuredJobs", featuredJobs);
+    return featuredJobs;
+  }
 }
 
 export async function getJobBySlug(slug: string): Promise<Job | undefined> {
-  return featuredJobs.find((job) => job.slug === slug);
+  const fallback = featuredJobs.find((job) => job.slug === slug || job.id === slug);
+
+  // 1. Try bySlug endpoint
+  try {
+    const rawData = await apiRequest<any>(
+      API_ENDPOINTS.vacancies.bySlug(slug),
+      { method: 'GET' }
+    );
+    if (rawData && !rawData.status) return mapOtysVacancyToJob(rawData);
+  } catch {
+    // ignore and try by ID
+  }
+
+  // 2. Try byId endpoint (for vacancies where slug is the id)
+  try {
+    const rawData = await apiRequest<any>(
+      API_ENDPOINTS.vacancies.details(slug),
+      { method: 'GET' }
+    );
+    if (rawData && !rawData.status) return mapOtysVacancyToJob(rawData);
+  } catch {
+    // ignore
+  }
+
+  // 3. Fallback: Search in latest collection
+  try {
+    const all = await getAllJobs({ itemsPerPage: 50 });
+    const match = all.find((j) => j.slug === slug || j.id === slug);
+    if (match) return match;
+  } catch {
+    // ignore
+  }
+
+  return fallback;
+}
+
+export async function getJobById(id: string | number): Promise<Job | undefined> {
+  const fallback = featuredJobs.find((job) => job.id === String(id));
+  try {
+    const rawData = await apiRequest<any>(
+      API_ENDPOINTS.vacancies.details(id),
+      { method: 'GET' },
+      fallback
+    );
+    if (!rawData) return fallback;
+    return mapOtysVacancyToJob(rawData);
+  } catch {
+    return fallback;
+  }
 }
 
 export async function getBlogPostBySlug(slug: string) {

@@ -221,6 +221,56 @@
   border: none !important;
 }
 
+.clearFieldBtn {
+  background: none;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.clearFieldBtn:hover {
+  color: #EF4444;
+  background-color: #FEE2E2;
+}
+
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.clearAllBtn {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: #64748B;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.clearAllBtn:hover {
+  color: #EF4444;
+  border-color: #FCA5A5;
+  background-color: #FEF2F2;
+}
+
 .searchBtn {
   flex-shrink: 0;
   background-color: var(--color-blue);
@@ -240,7 +290,7 @@
 
 .searchBtn:hover {
   background-color: var(--color-blue-dark);
-  box-shadow: 0 4px 14px rgba(0, 102, 255, 0.35);
+  box-shadow: 0 4px 14px rgba(247, 147, 30, 0.35);
 }
 
 .searchBtn svg {

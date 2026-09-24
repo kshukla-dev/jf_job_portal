@@ -1,5 +1,13 @@
 export type EmploymentType = 'Full Time' | 'Permanent' | 'Contract' | 'Part Time' | 'Remote';
 
+export interface Consultant {
+  name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+}
+
 export interface Job {
   id: string;
   slug: string;
@@ -19,6 +27,21 @@ export interface Job {
   requirements?: string[];
   industry?: string;
   isFeatured?: boolean;
+
+  // Rich OTYS Detailed Fields
+  overviewHtml?: string;
+  jobDescriptionHtml?: string;
+  requirementsHtml?: string;
+  companyProfileHtml?: string;
+  benefitsHtml?: string;
+  role?: string;
+  education?: string;
+  language?: string;
+  hoursPerWeek?: string;
+  region?: string;
+  branche?: string;
+  customApplyUrl?: string;
+  consultant?: Consultant;
 }
 
 export interface JobSearchParams {

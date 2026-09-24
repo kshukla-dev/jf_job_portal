@@ -50,16 +50,45 @@ export function JobSearch({
     };
   }, [isDropdownOpen]);
 
+  useEffect(() => {
+    if (initialKeyword !== undefined) setKeyword(initialKeyword);
+    if (initialLocation !== undefined) setLocation(initialLocation);
+    if (initialJobType !== undefined) setJobType(initialJobType);
+  }, [initialKeyword, initialLocation, initialJobType]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (keyword.trim()) params.set('q', keyword.trim());
-    if (location.trim()) params.set('location', location.trim());
-    if (jobType && jobType !== 'All types') params.set('type', jobType);
+    if (onSearch) {
+      onSearch({
+        keyword: keyword.trim(),
+        location: location.trim(),
+        jobType: jobType === 'All types' ? '' : jobType,
+      });
+    } else {
+      const params = new URLSearchParams();
+      if (keyword.trim()) params.set('q', keyword.trim());
+      if (location.trim()) params.set('location', location.trim());
+      if (jobType && jobType !== 'All types') params.set('type', jobType);
 
-    const queryStr = params.toString();
-    router.push(`/vacancies${queryStr ? `?${queryStr}` : ''}`);
+      const queryStr = params.toString();
+      router.push(`/vacancies${queryStr ? `?${queryStr}` : ''}`);
+    }
   };
+
+  const handleClear = () => {
+    setKeyword('');
+    setLocation('');
+    setJobType('All types');
+    if (onSearch) {
+      onSearch({ keyword: '', location: '', jobType: '' });
+    } else {
+      router.push(targetPath);
+    }
+  };
+
+  const hasActiveFilters = Boolean(
+    keyword.trim() || location.trim() || (jobType && jobType !== 'All types')
+  );
 
   return (
     <div className={styles.searchWrapper}>
@@ -77,9 +106,7 @@ export function JobSearch({
               </svg>
             </span>
             <div className={styles.inputGroup}>
-              <label htmlFor="job-search-keyword" className={styles.label}>
-                Job title, skills or keywords
-              </label>
+
               <input
                 id="job-search-keyword"
                 type="text"
@@ -89,6 +116,24 @@ export function JobSearch({
                 className={styles.input}
               />
             </div>
+            {keyword && (
+              <button
+                type="button"
+                className={styles.clearFieldBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setKeyword('');
+                  document.getElementById('job-search-keyword')?.focus();
+                }}
+                title="Clear keyword"
+                aria-label="Clear keyword"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
           </div>
 
           <div className={styles.divider} aria-hidden="true" />
@@ -105,9 +150,7 @@ export function JobSearch({
               </svg>
             </span>
             <div className={styles.inputGroup}>
-              <label htmlFor="job-search-location" className={styles.label}>
-                Location
-              </label>
+
               <input
                 id="job-search-location"
                 type="text"
@@ -117,6 +160,25 @@ export function JobSearch({
                 className={styles.input}
               />
             </div>
+            {location && (
+              <button
+                type="button"
+                className={styles.clearFieldBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLocation('');
+                  document.getElementById('job-search-location')?.focus();
+                }}
+                title="Clear location"
+                aria-label="Clear location"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+
           </div>
 
           <div className={styles.divider} aria-hidden="true" />
@@ -146,7 +208,6 @@ export function JobSearch({
               </svg>
             </span>
             <div className={styles.inputGroup}>
-              <span className={styles.label}>Job type</span>
               <div className={styles.dropdownTrigger}>
                 <span className={styles.dropdownValue}>
                   {jobTypeOptions.find((o) => o.value === jobType)?.label || jobType}
@@ -198,14 +259,25 @@ export function JobSearch({
             )}
           </div>
 
-          {/* Search Button */}
-          <button type="submit" className={styles.searchBtn}>
-            <span>Search Jobs</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
+          {/* Search & Clear Action Buttons */}
+          <div className={styles.actionGroup}>
+            <button type="submit" className={styles.searchBtn}>
+              <span>Search Jobs</span>
+            </button>
+
+            <button
+              type="button"
+              className={styles.clearAllBtn}
+              onClick={handleClear}
+              title="Clear all search inputs"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Clear</span>
+            </button>
+          </div>
         </form>
       </Container>
     </div>

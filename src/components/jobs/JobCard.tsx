@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Job } from '@/types/job';
 import styles from './JobCard.module.css';
 
@@ -12,19 +11,17 @@ interface JobCardProps {
 
 export function JobCard({ job }: JobCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showAllSkills, setShowAllSkills] = useState(false);
 
   return (
     <article className={styles.card}>
-      {/* Header: Company Logo & Bookmark */}
+      {/* Header: Type / Salary Badges & Bookmark */}
       <div className={styles.header}>
-        <div className={styles.logoWrapper}>
-          <Image
-            src={job.companyLogo}
-            alt={`${job.company} logo`}
-            width={90}
-            height={28}
-            className={styles.companyLogo}
-          />
+        <div className={styles.badgeGroup}>
+          <span className={styles.typeBadge}>{job.type}</span>
+          {job.salary && (
+            <span className={styles.salaryBadge}>{job.salary}</span>
+          )}
         </div>
 
         <button
@@ -56,21 +53,13 @@ export function JobCard({ job }: JobCardProps) {
 
       {/* Metadata */}
       <div className={styles.metadata}>
-        <div className={styles.metaItem}>
-          <svg className={styles.metaIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          <span>{job.location}</span>
-        </div>
-
         <div className={styles.metaRow}>
           <div className={styles.metaItem}>
             <svg className={styles.metaIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            <span>{job.type}</span>
+            <span>{job.location}</span>
           </div>
 
           <div className={styles.metaItem}>
@@ -83,14 +72,31 @@ export function JobCard({ job }: JobCardProps) {
         </div>
       </div>
 
-      {/* Skills */}
-      <div className={styles.skillsList} aria-label="Required skills">
-        {job.skills.map((skill) => (
-          <span key={skill} className={styles.skillBadge}>
-            {skill}
-          </span>
-        ))}
-      </div>
+      {/* Skills (Max 3 visible by default, expandable with Show More) */}
+      {job.skills && job.skills.length > 0 && (
+        <div className={styles.skillsList} aria-label="Required skills">
+          {(showAllSkills ? job.skills : job.skills.slice(0, 3)).map((skill, idx) => (
+            <span key={`${skill}-${idx}`} className={styles.skillBadge}>
+              {skill}
+            </span>
+          ))}
+
+          {job.skills.length > 3 && (
+            <button
+              type="button"
+              className={styles.moreSkillsBtn}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowAllSkills(!showAllSkills);
+              }}
+              title={showAllSkills ? 'Show fewer skills' : 'Show all skills'}
+            >
+              {showAllSkills ? 'Show less' : `+${job.skills.length - 3} more`}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Footer: Posted time & View Job button */}
       <div className={styles.footer}>

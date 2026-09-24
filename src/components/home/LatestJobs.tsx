@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { Container } from '@/components/common/Container';
 import { SectionTitle } from '@/components/common/SectionTitle';
 import { JobCard } from '@/components/jobs/JobCard';
-import { featuredJobs } from '@/data/jobs';
+import { getAllJobs } from '@/lib/api';
 import styles from './LatestJobs.module.css';
 
-export function LatestJobs() {
-  const displayJobs = featuredJobs.slice(0, 4);
+export async function LatestJobs() {
+  // Fetch real jobs from OTYS API (showing 4 on landing page)
+  const jobs = await getAllJobs({ itemsPerPage: 4 });
+  const displayJobs = jobs.slice(0, 4);
 
   return (
     <section className={styles.section} aria-label="Latest Job Opportunities">
