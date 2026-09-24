@@ -81,9 +81,9 @@ let lastKnownGoodToken: TokenData | null = null;
  * Secrets are strictly read server-side.
  */
 export function getAuthConfig() {
-  const baseUrl = (process.env.OTYS_API_BASE_URL || 'https://webapi.otys.app/api').replace(/\/+$/, '');
-  const authKey = process.env.OTYS_API_KEY || process.env.APP_AUTH_KEY || 'gv0MSr8EV3HovrVzLWcCQ0SkkA8PiortyNWZ2/zrih9IfsTZQ8y33Q==';
-  const websiteId = process.env.OTYS_WEBSITE_ID || '2';
+  const baseUrl = (process.env.OTYS_API_BASE_URL || '').replace(/\/+$/, '');
+  const authKey = process.env.OTYS_API_KEY || process.env.APP_AUTH_KEY || '';
+  const websiteId = process.env.OTYS_WEBSITE_ID || '';
   const authEndpoint = '/auth';
 
   return {
