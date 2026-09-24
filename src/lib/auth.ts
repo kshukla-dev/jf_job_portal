@@ -101,22 +101,21 @@ function logSafeAuthConfig(baseUrl: string, websiteId: string, hasKey: boolean):
  */
 export function getAuthConfig() {
   const isProduction = process.env.NODE_ENV === 'production';
-  const rawBaseUrl =
-    process.env.OTYS_API_BASE_URL ||
-    (isProduction ? '' : 'https://webapi.otys.app/api');
-  const baseUrl = (rawBaseUrl || '').replace(/\/+$/, '');
+  let rawBaseUrl = process.env.OTYS_API_BASE_URL?.trim();
+
+  // Guard: if empty, missing, or erroneously filled with the variable name itself, fallback to official OTYS URL
+  if (!rawBaseUrl || !rawBaseUrl.startsWith('http')) {
+    rawBaseUrl = 'https://webapi.otys.app/api';
+  }
+  const baseUrl = rawBaseUrl.replace(/\/+$/, '');
 
   const authKey =
-    process.env.OTYS_API_KEY ||
-    process.env.APP_AUTH_KEY || '';
+    process.env.OTYS_API_KEY?.trim() ||
+    process.env.APP_AUTH_KEY?.trim() || '';
 
   const websiteId =
-    process.env.OTYS_WEBSITE_ID ||
-    (isProduction ? '' : '2');
-
-  if (!baseUrl) {
-    throw new Error('Missing OTYS_API_BASE_URL environment variable.');
-  }
+    process.env.OTYS_WEBSITE_ID?.trim() ||
+    '2';
 
   if (!authKey) {
     if (isProduction || AUTH_API_ENABLED) {
@@ -124,10 +123,6 @@ export function getAuthConfig() {
         'Missing OTYS API authentication key. Configure OTYS_API_KEY on the server.'
       );
     }
-  }
-
-  if (!websiteId) {
-    throw new Error('Missing OTYS_WEBSITE_ID environment variable.');
   }
 
   logSafeAuthConfig(baseUrl, websiteId, Boolean(authKey));
