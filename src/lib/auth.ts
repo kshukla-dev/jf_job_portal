@@ -45,8 +45,9 @@ export interface TokenStore {
 
 /**
  * MASTER SAFETY TOGGLE:
- * When false, NO real external network requests are sent to the Auth API.
+ * When false in development, NO real external network requests are sent to the Auth API.
  * The system returns a safe mock token and simulates the 12-hour lifecycle.
+ * In production, AUTH_API_ENABLED must be explicitly set to 'true'.
  * Set AUTH_API_ENABLED=true in .env.local to activate real API calls.
  */
 export const AUTH_API_ENABLED: boolean = process.env.AUTH_API_ENABLED === 'true';
@@ -76,19 +77,66 @@ let consecutiveAuthFailures = 0;
  */
 let lastKnownGoodToken: TokenData | null = null;
 
+let hasLoggedConfig = false;
+
+/**
+ * Safe configuration diagnostics for debugging production without exposing secrets.
+ */
+function logSafeAuthConfig(baseUrl: string, websiteId: string, hasKey: boolean): void {
+  if (!hasLoggedConfig) {
+    hasLoggedConfig = true;
+    console.log('[Auth Config]', {
+      environment: process.env.NODE_ENV,
+      baseUrl,
+      websiteId,
+      authEnabled: AUTH_API_ENABLED,
+      hasApiKey: hasKey,
+    });
+  }
+}
+
 /**
  * Auth configuration helper.
  * Secrets are strictly read server-side.
  */
 export function getAuthConfig() {
-  const baseUrl = (process.env.OTYS_API_BASE_URL || '').replace(/\/+$/, '');
-  const authKey = process.env.OTYS_API_KEY || process.env.APP_AUTH_KEY || '';
-  const websiteId = process.env.OTYS_WEBSITE_ID || '';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const rawBaseUrl =
+    process.env.OTYS_API_BASE_URL ||
+    (isProduction ? '' : 'https://webapi.otys.app/api');
+  const baseUrl = (rawBaseUrl || '').replace(/\/+$/, '');
+
+  const authKey =
+    process.env.OTYS_API_KEY ||
+    process.env.APP_AUTH_KEY;
+
+  const websiteId =
+    process.env.OTYS_WEBSITE_ID ||
+    (isProduction ? '' : '2');
+
+  if (!baseUrl) {
+    throw new Error('Missing OTYS_API_BASE_URL environment variable.');
+  }
+
+  if (!authKey) {
+    if (isProduction || AUTH_API_ENABLED) {
+      throw new Error(
+        'Missing OTYS API authentication key. Configure OTYS_API_KEY on the server.'
+      );
+    }
+  }
+
+  if (!websiteId) {
+    throw new Error('Missing OTYS_WEBSITE_ID environment variable.');
+  }
+
+  logSafeAuthConfig(baseUrl, websiteId, Boolean(authKey));
+
   const authEndpoint = '/auth';
 
   return {
     baseUrl,
-    authKey,
+    authKey: authKey || '',
     websiteId,
     authEndpoint,
     authUrl: `${baseUrl}${authEndpoint}`,
@@ -172,26 +220,12 @@ export function getLastKnownGoodToken(): TokenData | null {
  * - On success: resets failure count to 0 and stores last known good token.
  */
 export async function requestNewToken(): Promise<string> {
-  const config = getAuthConfig();
-
-  // 1. Circuit Breaker Check: Stop calling if 5 consecutive failures occurred
-  if (consecutiveAuthFailures >= MAX_AUTH_FAILURES) {
-    console.error(
-      `[Auth Circuit Breaker] Max consecutive authentication failures (${MAX_AUTH_FAILURES}) reached. Halting external auth calls.`
-    );
-
-    if (lastKnownGoodToken) {
-      console.warn('[Auth Circuit Breaker] Serving last known stale token as fallback.');
-      return lastKnownGoodToken.accessToken;
+  // 1. Safety check: do NOT trigger real API if disabled, and NEVER allow mock token in production
+  if (!AUTH_API_ENABLED) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AUTH_API_ENABLED must be true in production.');
     }
 
-    throw new Error(
-      `Authentication circuit breaker tripped: failed ${MAX_AUTH_FAILURES} consecutive times. No external calls will be made.`
-    );
-  }
-
-  // 2. Safety check: do NOT trigger real API if disabled
-  if (!AUTH_API_ENABLED) {
     const mockToken = 'mock_auth_token_ready_for_activation';
     const expiresAt = Date.now() + DEFAULT_EXPIRY_MS;
 
@@ -205,6 +239,28 @@ export async function requestNewToken(): Promise<string> {
     consecutiveAuthFailures = 0;
     await activeTokenStore.setToken(tokenData);
     return mockToken;
+  }
+
+  const config = getAuthConfig();
+
+  // 2. Circuit Breaker Check: Stop calling if 5 consecutive failures occurred
+  if (consecutiveAuthFailures >= MAX_AUTH_FAILURES) {
+    console.error(
+      `[Auth Circuit Breaker] Max consecutive authentication failures (${MAX_AUTH_FAILURES}) reached. Halting external auth calls.`
+    );
+
+    if (
+      lastKnownGoodToken &&
+      (process.env.NODE_ENV !== 'production' ||
+        lastKnownGoodToken.accessToken !== 'mock_auth_token_ready_for_activation')
+    ) {
+      console.warn('[Auth Circuit Breaker] Serving last known stale token as fallback.');
+      return lastKnownGoodToken.accessToken;
+    }
+
+    throw new Error(
+      `Authentication circuit breaker tripped: failed ${MAX_AUTH_FAILURES} consecutive times. No external calls will be made.`
+    );
   }
 
   // 3. Real authentication flow with full exception handling & transient network retries
@@ -286,8 +342,12 @@ export async function requestNewToken(): Promise<string> {
       `[Auth Error] Failed to obtain new token (Failure ${consecutiveAuthFailures}/${MAX_AUTH_FAILURES}): ${errMsg}`
     );
 
-    // Stale data fallback: if we have a previous token, serve it instead of failing immediately
-    if (lastKnownGoodToken) {
+    // Stale data fallback: if we have a previous real token, serve it instead of failing immediately
+    if (
+      lastKnownGoodToken &&
+      (process.env.NODE_ENV !== 'production' ||
+        lastKnownGoodToken.accessToken !== 'mock_auth_token_ready_for_activation')
+    ) {
       console.warn('[Auth Fallback] Serving stale/cached token after refresh failure.');
       return lastKnownGoodToken.accessToken;
     }
@@ -312,12 +372,22 @@ export async function requestNewToken(): Promise<string> {
  * @param forceRefresh - Force request a new token even if existing token is valid
  */
 export async function getValidToken(forceRefresh: boolean = false): Promise<string> {
+  if (process.env.NODE_ENV === 'production' && !AUTH_API_ENABLED) {
+    throw new Error('AUTH_API_ENABLED must be true in production.');
+  }
+
   try {
     const existingToken = await activeTokenStore.getToken();
 
     const isExpired = !existingToken || Date.now() >= existingToken.expiresAt - REFRESH_BUFFER_MS;
 
     if (!forceRefresh && existingToken && !isExpired) {
+      if (
+        process.env.NODE_ENV === 'production' &&
+        existingToken.accessToken === 'mock_auth_token_ready_for_activation'
+      ) {
+        throw new Error('AUTH_API_ENABLED must be true in production.');
+      }
       return existingToken.accessToken;
     }
 
@@ -344,7 +414,11 @@ export async function getValidToken(forceRefresh: boolean = false): Promise<stri
     }
     const staleToken = existingToken || lastKnownGoodToken;
 
-    if (staleToken) {
+    if (
+      staleToken &&
+      (process.env.NODE_ENV !== 'production' ||
+        staleToken.accessToken !== 'mock_auth_token_ready_for_activation')
+    ) {
       console.warn('[Auth Fallback] Returning stale token after exception in getValidToken().');
       return staleToken.accessToken;
     }

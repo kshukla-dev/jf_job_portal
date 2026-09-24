@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthConfig } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     try {
-        let key = process.env.OTYS_API_KEY;
+        const config = getAuthConfig();
+        let key = config.authKey;
 
         try {
             const body = await request.json();
@@ -12,13 +14,10 @@ export async function POST(request: NextRequest) {
                 key = body.key;
             }
         } catch {
-            // Body not provided or not JSON, use env key
+            // Body not provided or not JSON, use config key
         }
 
-        const baseUrl = process.env.OTYS_API_BASE_URL || '';
-        const authUrl = `${baseUrl.replace(/\/+$/, '')}/auth`;
-
-        const response = await fetch(authUrl, {
+        const response = await fetch(config.authUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
