@@ -598,43 +598,139 @@
   background-color: #047857;
 }
 
-/* Loading Skeleton */
+/* Loading Skeleton (1:1 with real form dimensions & layout) */
 .skeletonCard {
   background-color: #FFFFFF;
   border: 1px solid #E5E7EB;
   border-radius: 16px;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   padding: 32px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  width: 100%;
+  max-width: 980px;
+  min-height: 580px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
-.skeletonHeader {
-  height: 32px;
-  width: 200px;
-  background-color: #E2E8F0;
+.skeletonTitle {
+  height: 28px;
+  width: 190px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
   border-radius: 6px;
 }
 
-.skeletonColumns {
+.skeletonBody {
   display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 40px;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 48px;
+  align-items: start;
 }
 
-.skeletonBlock {
-  height: 180px;
-  background-color: #F1F5F9;
+@media (max-width: 920px) {
+  .skeletonBody {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.skeletonLeftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.skeletonGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeletonGroupTitle {
+  height: 18px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.skeletonCheckList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeletonCheckRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeletonCheckbox {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  flex-shrink: 0;
+}
+
+.skeletonLine {
+  height: 14px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 4px;
+}
+
+.skeletonRightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeletonField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonLabel {
+  height: 13px;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 4px;
+}
+
+.skeletonInput {
+  height: 46px;
+  background: linear-gradient(90deg, #F8FAFC 25%, #EDF2F7 50%, #F8FAFC 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border: 1px solid #E2E8F0;
   border-radius: 8px;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+.skeletonButton {
+  height: 44px;
+  width: 160px;
+  background: linear-gradient(90deg, #FFEDD5 25%, #FED7AA 50%, #FFEDD5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 9999px;
+  margin-top: 8px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
   }
-  50% {
-    opacity: 0.5;
+  100% {
+    background-position: -200% 0;
   }
 }
 

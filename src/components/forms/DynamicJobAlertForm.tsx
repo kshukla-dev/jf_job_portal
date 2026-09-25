@@ -228,14 +228,101 @@ export function DynamicJobAlertForm({
     }
   };
 
-  // Loading State
+  // Loading State (1:1 size matching the actual form layout)
   if (isLoading) {
     return (
       <div className={styles.skeletonCard} aria-label="Loading job alert form">
-        <div className={styles.skeletonHeader}></div>
-        <div className={styles.skeletonColumns}>
-          <div className={styles.skeletonBlock}></div>
-          <div className={styles.skeletonBlock}></div>
+        {/* Header Skeleton */}
+        <div className={styles.cardHeader}>
+          <div className={styles.skeletonTitle}></div>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Form Body Skeleton with 2-column layout */}
+        <div className={styles.skeletonBody}>
+          {/* Left Column: Checkbox Groups */}
+          <div className={styles.skeletonLeftCol}>
+            {/* Group 1: Contract Type */}
+            <div className={styles.skeletonGroup}>
+              <div className={styles.skeletonGroupTitle} style={{ width: '120px' }}></div>
+              <div className={styles.skeletonCheckList}>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '90px' }}></div>
+                </div>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '110px' }}></div>
+                </div>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '160px' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Group 2: Language */}
+            <div className={styles.skeletonGroup}>
+              <div className={styles.skeletonGroupTitle} style={{ width: '85px' }}></div>
+              <div className={styles.skeletonCheckList}>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '95px' }}></div>
+                </div>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '75px' }}></div>
+                </div>
+                <div className={styles.skeletonCheckRow}>
+                  <div className={styles.skeletonCheckbox}></div>
+                  <div className={styles.skeletonLine} style={{ width: '60px' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Inputs & Submit Button */}
+          <div className={styles.skeletonRightCol}>
+            {/* Keyword */}
+            <div className={styles.skeletonField}>
+              <div className={styles.skeletonLabel} style={{ width: '70px' }}></div>
+              <div className={styles.skeletonInput}></div>
+            </div>
+
+            {/* Branche */}
+            <div className={styles.skeletonField}>
+              <div className={styles.skeletonLabel} style={{ width: '60px' }}></div>
+              <div className={styles.skeletonInput}></div>
+            </div>
+
+            {/* Skills */}
+            <div className={styles.skeletonField}>
+              <div className={styles.skeletonLabel} style={{ width: '50px' }}></div>
+              <div className={styles.skeletonInput}></div>
+            </div>
+
+            {/* Period */}
+            <div className={styles.skeletonField}>
+              <div className={styles.skeletonLabel} style={{ width: '220px' }}></div>
+              <div className={styles.skeletonInput}></div>
+            </div>
+
+            {/* Email */}
+            <div className={styles.skeletonField}>
+              <div className={styles.skeletonLabel} style={{ width: '170px' }}></div>
+              <div className={styles.skeletonInput}></div>
+            </div>
+
+            {/* Submit Button */}
+            <div className={styles.skeletonButton}></div>
+          </div>
         </div>
       </div>
     );
