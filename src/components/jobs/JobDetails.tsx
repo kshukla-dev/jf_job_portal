@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useJobAlertModal } from '@/context/JobAlertModalContext';
 import { Job } from '@/types/job';
 import { cleanRichHtml, translateDutchToEnglish } from '@/lib/utils';
 import styles from './JobDetails.module.css';
@@ -80,6 +81,7 @@ function ExpandableContent({
 }
 
 export function JobDetails({ job, similarJobs = [] }: JobDetailsProps) {
+  const { openJobAlertModal } = useJobAlertModal();
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -688,7 +690,14 @@ export function JobDetails({ job, similarJobs = [] }: JobDetailsProps) {
             <p className={styles.alertDesc}>
               Be the first to know about new opportunities matching your profile.
             </p>
-            <Link href="/job-alert" className={styles.alertBtn}>
+            <Link
+              href="/job-alert"
+              className={styles.alertBtn}
+              onClick={(e) => {
+                e.preventDefault();
+                openJobAlertModal();
+              }}
+            >
               Subscribe Now →
             </Link>
           </div>

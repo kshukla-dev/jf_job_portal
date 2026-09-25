@@ -38,6 +38,9 @@ export const API_ENDPOINTS = {
     bySlug: (slug: string) => `/vacancies/slug/${slug}`,
     details: (id: string | number) => `/vacancies/${id}`,
   },
+  forms: {
+    jobAlert: '/jobalert-form',
+  },
 } as const;
 
 // ============================================================================
@@ -602,3 +605,279 @@ export async function getBlogPostBySlug(slug: string) {
 export async function getNewsArticleBySlug(slug: string) {
   return newsArticles.find((item) => item.slug === slug);
 }
+
+// ============================================================================
+// 5. OTYS JOB ALERT FORM TYPES, NORMALIZER & API CLIENT HELPERS
+// ============================================================================
+
+export interface OtysRawConstraint {
+  '@type'?: string;
+  type?: string | null;
+  message?: string;
+  pattern?: string | null;
+  [key: string]: unknown;
+}
+
+export interface OtysRawFormQuestionOption {
+  '@type'?: string;
+  value: string | number;
+  label: string;
+  kill?: boolean;
+  killExplanation?: string | null;
+  [key: string]: unknown;
+}
+
+export interface OtysRawFormQuestion {
+  '@type'?: string;
+  id: string;
+  question: string;
+  type: string;
+  options?: OtysRawFormQuestionOption[] | null;
+  constraints?: OtysRawConstraint[];
+  [key: string]: unknown;
+}
+
+export interface OtysRawFormPage {
+  '@type'?: string;
+  title?: string;
+  questions?: OtysRawFormQuestion[];
+  [key: string]: unknown;
+}
+
+export interface OtysRawFormResponse {
+  '@context'?: string;
+  '@id'?: string;
+  '@type'?: string;
+  id?: number | string;
+  title?: string;
+  pages?: OtysRawFormPage[];
+  [key: string]: unknown;
+}
+
+export interface JobAlertFieldOption {
+  value: string;
+  label: string;
+}
+
+export interface JobAlertField {
+  id: string;
+  name: string;
+  label: string;
+  rawQuestion: string;
+  type: string; // 'email' | 'select' | 'multiselect' | 'text' | 'textarea' | 'number' | 'checkbox' | 'radio' | 'date'
+  required: boolean;
+  options?: JobAlertFieldOption[];
+  defaultValue?: unknown;
+  placeholder?: string;
+  constraints?: OtysRawConstraint[];
+}
+
+export interface NormalizedJobAlertForm {
+  id?: number | string;
+  title: string;
+  fields: JobAlertField[];
+}
+
+export interface OtysJobAlertSubmitPayload {
+  metaData?: {
+    ip?: string;
+    referer?: string | null;
+    [key: string]: unknown;
+  } | null;
+  answers: Record<string, string | string[]>;
+}
+
+export interface OtysJobAlertSubmitResponse {
+  message?: string;
+  data?: {
+    hash?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Normalizes raw OTYS Form API response into a clean, predictable internal model.
+ */
+export function normalizeJobAlertFormResponse(raw: OtysRawFormResponse): NormalizedJobAlertForm {
+  if (!raw || !Array.isArray(raw.pages)) {
+    return {
+      id: raw?.id,
+      title: raw?.title || 'Job Alert',
+      fields: [],
+    };
+  }
+
+  const fields: JobAlertField[] = [];
+
+  for (const page of raw.pages) {
+    if (!Array.isArray(page.questions)) continue;
+
+    for (const q of page.questions) {
+      if (!q || !q.id) continue;
+
+      // Filter: Keep only requested fields: Email, Branch, Type (Contract type), Language, Skill, Period
+      const qText = (q.question || '').toLowerCase();
+      const qType = (q.type || '').toLowerCase();
+      const isAllowed =
+        qType === 'email' ||
+        qText.includes('email') ||
+        qText.includes('branch') ||
+        qText.includes('contract') ||
+        qText.includes('type') ||
+        qText.includes('language') ||
+        qText.includes('skill') ||
+        qText.includes('period');
+
+      if (!isAllowed) {
+        continue;
+      }
+
+      const isRequired =
+        Array.isArray(q.constraints) &&
+        q.constraints.some(
+          (c) =>
+            c['@type'] === 'NotBlank' ||
+            c.type === 'NotBlank' ||
+            c['@type'] === 'NotNull' ||
+            c.type === 'NotNull' ||
+            (c.message && /required|cannot be blank|mandatory/i.test(c.message))
+        );
+
+      const options: JobAlertFieldOption[] | undefined = Array.isArray(q.options)
+        ? q.options.map((opt) => ({
+            value: String(opt.value),
+            label: opt.label || String(opt.value),
+          }))
+        : undefined;
+
+      // Clean display label while keeping original question context
+      let cleanLabel = q.question || q.id;
+      if (cleanLabel.toLowerCase().startsWith('match criterium ')) {
+        cleanLabel = cleanLabel.substring('match criterium '.length);
+      }
+
+      // Determine appropriate placeholder
+      let placeholder = '';
+      if (q.type === 'email') {
+        placeholder = 'name@company.com';
+      } else if (q.type === 'multiselect') {
+        placeholder = `Select ${cleanLabel.toLowerCase()}...`;
+      } else if (q.type === 'select') {
+        placeholder = `Select ${cleanLabel.toLowerCase()}`;
+      } else if (q.type === 'text') {
+        placeholder = `Enter ${cleanLabel.toLowerCase()}`;
+      }
+
+      // Determine default value
+      let defaultValue: unknown = undefined;
+      if (q.type === 'multiselect') {
+        defaultValue = [];
+      } else if (q.type === 'select') {
+        if (cleanLabel.toLowerCase().includes('period') && options) {
+          const weeklyOption = options.find((o) => o.value.toLowerCase() === 'weekly');
+          defaultValue = weeklyOption ? weeklyOption.value : options[0]?.value || '';
+        } else {
+          defaultValue = '';
+        }
+      } else {
+        defaultValue = '';
+      }
+
+      fields.push({
+        id: q.id,
+        name: q.id,
+        label: cleanLabel,
+        rawQuestion: q.question,
+        type: q.type ? q.type.toLowerCase() : 'text',
+        required: isRequired,
+        options,
+        placeholder,
+        defaultValue,
+        constraints: q.constraints || [],
+      });
+    }
+  }
+
+  return {
+    id: raw.id,
+    title: raw.title || 'Job Alert',
+    fields,
+  };
+}
+
+/**
+ * Builds OTYS Job Alert submission payload from normalized fields and dynamic form values.
+ */
+export function buildJobAlertPayload(
+  fields: JobAlertField[],
+  formValues: Record<string, unknown>
+): OtysJobAlertSubmitPayload {
+  const answers: Record<string, string | string[]> = {};
+
+  for (const field of fields) {
+    const rawVal = formValues[field.id];
+    if (rawVal === undefined || rawVal === null || rawVal === '') {
+      continue;
+    }
+
+    if (field.type === 'multiselect' || Array.isArray(rawVal)) {
+      const arr = Array.isArray(rawVal) ? rawVal : [rawVal];
+      const cleaned = arr.map((item) => String(item).trim()).filter(Boolean);
+      if (cleaned.length > 0) {
+        answers[field.id] = cleaned;
+      }
+    } else {
+      const strVal = String(rawVal).trim();
+      if (strVal) {
+        answers[field.id] = strVal;
+      }
+    }
+  }
+
+  // Ensure Website criterion is attached so OTYS never fails with 500
+  if (!answers['q200120']) {
+    answers['q200120'] = ['13_44159']; // Jackson and Frank
+  }
+
+  return {
+    answers,
+  };
+}
+
+/**
+ * Fetches the Job Alert form definition from OTYS API and normalizes it.
+ */
+export async function getJobAlertFormDefinition(): Promise<NormalizedJobAlertForm> {
+  const raw = await apiRequest<OtysRawFormResponse>(
+    API_ENDPOINTS.forms.jobAlert,
+    { method: 'GET' }
+  );
+  return normalizeJobAlertFormResponse(raw);
+}
+
+/**
+ * Submits Job Alert form answers to OTYS API.
+ */
+export async function submitJobAlertSubscription(
+  payload: OtysJobAlertSubmitPayload
+): Promise<OtysJobAlertSubmitResponse> {
+  const response = await authenticatedFetch(API_ENDPOINTS.forms.jobAlert, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      Accept: 'application/ld+json, application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => '');
+    throw new Error(
+      `Job alert subscription failed [${response.status} ${response.statusText}]: ${errorBody}`
+    );
+  }
+
+  return (await response.json()) as OtysJobAlertSubmitResponse;
+}
+

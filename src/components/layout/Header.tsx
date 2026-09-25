@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { mainNavigation } from '@/data/navigation';
+import { useJobAlertModal } from '@/context/JobAlertModalContext';
 import { Container } from '@/components/common/Container';
 import { MobileMenu } from './MobileMenu';
 import styles from './Header.module.css';
@@ -12,6 +13,7 @@ import styles from './Header.module.css';
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { openJobAlertModal } = useJobAlertModal();
 
   return (
     <header className={styles.header}>
@@ -33,12 +35,19 @@ export function Header() {
         {/* Center/Right: Clean Navigation Links */}
         <nav className={styles.nav} aria-label="Main Navigation">
           {mainNavigation.map((item) => {
+            const isJobAlert = item.href === '/job-alert';
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className={`${styles.navLink} ${isActive ? styles.activeNavLink : ''}`}
+                onClick={(e) => {
+                  if (isJobAlert) {
+                    e.preventDefault();
+                    openJobAlertModal();
+                  }
+                }}
               >
                 {item.name}
               </Link>
