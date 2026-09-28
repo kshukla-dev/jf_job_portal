@@ -192,6 +192,27 @@ export function DynamicJobAlertForm({
       // Build OTYS payload
       const payload = buildJobAlertPayload(formDef.fields, formValues);
 
+      // Extract client UTM parameters if present in browser URL
+      let clientUtmTags: Record<string, string> | undefined = undefined;
+      if (typeof window !== 'undefined' && window.location.search) {
+        const searchParams = new URLSearchParams(window.location.search);
+        const source = searchParams.get('utm_source');
+        const medium = searchParams.get('utm_medium');
+        const campaign = searchParams.get('utm_campaign');
+        const term = searchParams.get('utm_term');
+        const content = searchParams.get('utm_content');
+
+        if (source || medium || campaign || term || content) {
+          clientUtmTags = {
+            ...(source ? { source } : {}),
+            ...(medium ? { medium } : {}),
+            ...(campaign ? { campaign } : {}),
+            ...(term ? { term } : {}),
+            ...(content ? { content } : {}),
+          };
+        }
+      }
+
       const res = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
@@ -202,6 +223,7 @@ export function DynamicJobAlertForm({
           fields: formDef.fields,
           formValues,
           answers: payload.answers,
+          metaData: clientUtmTags ? { utmTags: clientUtmTags } : undefined,
         }),
       });
 

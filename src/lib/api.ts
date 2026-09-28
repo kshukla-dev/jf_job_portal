@@ -678,16 +678,35 @@ export interface NormalizedJobAlertForm {
   fields: JobAlertField[];
 }
 
+export interface OtysJobAlertUtmTags {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  term?: string;
+  content?: string;
+}
+
+export interface OtysJobAlertMetaData {
+  ip?: string;
+  utmTags?: OtysJobAlertUtmTags;
+  visitorExternalId?: string;
+  gaSessionId?: string;
+  referer?: string | null;
+  [key: string]: unknown;
+}
+
 export interface OtysJobAlertSubmitPayload {
-  metaData?: {
-    ip?: string;
-    referer?: string | null;
-    [key: string]: unknown;
-  } | null;
+  metaData?: OtysJobAlertMetaData | null;
   answers: Record<string, string | string[]>;
 }
 
 export interface OtysJobAlertSubmitResponse {
+  '@context'?: string;
+  '@id'?: string;
+  '@type'?: string;
+  id?: number | string;
+  title?: string;
+  pages?: OtysRawFormPage[];
   message?: string;
   data?: {
     hash?: string;

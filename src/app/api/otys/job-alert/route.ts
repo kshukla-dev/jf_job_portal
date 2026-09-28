@@ -75,12 +75,30 @@ export async function POST(request: NextRequest) {
     // Attach optional metadata if available
     const referer = request.headers.get('referer');
     const forwardedFor = request.headers.get('x-forwarded-for');
-    if (referer || forwardedFor) {
-      payload.metaData = {
-        referer: referer || null,
-        ip: forwardedFor ? forwardedFor.split(',')[0].trim() : undefined,
-      };
+
+    let refererUrl: URL | null = null;
+    if (referer) {
+      try {
+        refererUrl = new URL(referer);
+      } catch {
+        // referer is not a valid absolute URL, ignore safely
+      }
     }
+
+    const utmTags = body.metaData?.utmTags || {
+      source: refererUrl?.searchParams.get('utm_source') || 'website',
+      medium: refererUrl?.searchParams.get('utm_medium') || 'organic',
+      campaign: refererUrl?.searchParams.get('utm_campaign') || undefined,
+      term: refererUrl?.searchParams.get('utm_term') || undefined,
+      content: refererUrl?.searchParams.get('utm_content') || undefined,
+    };
+
+    payload.metaData = {
+      ...(body.metaData || {}),
+      utmTags,
+      referer: body.metaData?.referer || referer || null,
+      ip: body.metaData?.ip || (forwardedFor ? forwardedFor.split(',')[0].trim() : undefined),
+    };
 
     const result = await submitJobAlertSubscription(payload);
 
