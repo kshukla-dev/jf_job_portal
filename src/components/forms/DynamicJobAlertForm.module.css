@@ -7,9 +7,9 @@
   border: 1px solid #E5E7EB;
   border-radius: 16px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  padding: 32px 40px;
-  width: 100%;
-  max-width: 980px;
+  padding: 24px 34px;
+  width: 80%;
+  max-width: 960px;
   margin: 0 auto;
   box-sizing: border-box;
   font-family: inherit;
@@ -21,13 +21,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 20px;
+  padding-bottom: 14px;
   border-bottom: 1px solid #E5E7EB;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .modalTitle {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   color: #111827;
   letter-spacing: -0.02em;
@@ -55,14 +55,14 @@
 .formBody {
   display: grid;
   grid-template-columns: 1fr 1.35fr;
-  gap: 48px;
+  gap: 36px;
   align-items: start;
 }
 
 @media (max-width: 920px) {
   .formBody {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 28px;
   }
 }
 
@@ -70,7 +70,7 @@
 .criteriaSection {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 20px;
 }
 
 .criteriaGroup {
@@ -79,10 +79,10 @@
 }
 
 .groupTitle {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
   color: #1F2937;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -92,7 +92,7 @@
 .checkboxList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .checkboxItem {
@@ -206,17 +206,17 @@
 .inputsSection {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 13px;
 }
 
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
 
 .inputLabel {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #1F2937;
   display: flex;
@@ -248,11 +248,11 @@
 .textInput,
 .selectInput {
   width: 100%;
-  height: 46px;
+  height: 40px;
   border: 1px solid #E2E8F0;
   border-radius: 8px;
-  padding: 10px 14px 10px 42px;
-  font-size: 14px;
+  padding: 8px 14px 8px 40px;
+  font-size: 13.5px;
   font-family: inherit;
   color: #1F2937;
   background-color: #FFFFFF;
@@ -290,12 +290,12 @@
 }
 
 .searchableInputTrigger {
-  height: 46px;
-  min-height: 46px;
+  height: 40px;
+  min-height: 40px;
   border: 1px solid #E2E8F0;
   border-radius: 8px;
-  padding: 0 36px 0 42px;
-  font-size: 14px;
+  padding: 0 34px 0 40px;
+  font-size: 13.5px;
   font-family: inherit;
   color: #1F2937;
   background-color: #FFFFFF;
@@ -491,7 +491,7 @@
 
 /* Orange Pill Submit Button (as in user screenshot) */
 .actionRow {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .orangeSubmitBtn {
@@ -500,8 +500,8 @@
   color: #FFFFFF;
   border: none;
   border-radius: 9999px;
-  padding: 13px 36px;
-  font-size: 15px;
+  padding: 10px 32px;
+  font-size: 14.5px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -604,10 +604,10 @@
   border: 1px solid #E5E7EB;
   border-radius: 16px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  padding: 32px 40px;
-  width: 100%;
-  max-width: 980px;
-  min-height: 580px;
+  padding: 24px 34px;
+  width: 80%;
+  max-width: 960px;
+  min-height: 480px;
   margin: 0 auto;
   box-sizing: border-box;
   font-family: inherit;
@@ -625,21 +625,21 @@
 .skeletonBody {
   display: grid;
   grid-template-columns: 1fr 1.35fr;
-  gap: 48px;
+  gap: 36px;
   align-items: start;
 }
 
 @media (max-width: 920px) {
   .skeletonBody {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 28px;
   }
 }
 
 .skeletonLeftCol {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 20px;
 }
 
 .skeletonGroup {
@@ -707,7 +707,7 @@
 }
 
 .skeletonInput {
-  height: 46px;
+  height: 40px;
   background: linear-gradient(90deg, #F8FAFC 25%, #EDF2F7 50%, #F8FAFC 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
@@ -716,19 +716,20 @@
 }
 
 .skeletonButton {
-  height: 44px;
-  width: 160px;
+  height: 40px;
+  width: 150px;
   background: linear-gradient(90deg, #FFEDD5 25%, #FED7AA 50%, #FFEDD5 75%);
   background-size: 200% 100%;
   animation: shimmer 1.6s infinite;
   border-radius: 9999px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -776,6 +777,7 @@
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -932,13 +934,155 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
   .thankYouActions {
     flex-direction: column;
     gap: 10px;
   }
+
   .thankYouDoneBtn,
   .thankYouNewAlertBtn {
     width: 100%;
   }
 }
 
+@media (max-width: 768px) {
+  .modalCard,
+  .skeletonCard {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Laptop & Compact Viewport Optimizations (Fit seamlessly without cut-off)
+   ========================================================================== */
+@media (max-height: 850px) {
+  .modalCard {
+    padding: 18px 28px;
+  }
+
+  .cardHeader {
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .modalTitle {
+    font-size: 22px;
+  }
+
+  .formBody {
+    gap: 28px;
+  }
+
+  .criteriaSection {
+    gap: 16px;
+  }
+
+  .checkboxList {
+    gap: 6px;
+  }
+
+  .inputsSection {
+    gap: 10px;
+  }
+
+  .inputGroup {
+    gap: 4px;
+  }
+
+  .inputLabel {
+    font-size: 13px;
+  }
+
+  .textInput,
+  .selectInput,
+  .searchableInputTrigger {
+    height: 38px;
+    min-height: 38px;
+    font-size: 13px;
+    padding-left: 38px;
+  }
+
+  .fieldIcon {
+    left: 12px;
+  }
+
+  .actionRow {
+    margin-top: 4px;
+  }
+
+  .orangeSubmitBtn {
+    padding: 9px 28px;
+    font-size: 14px;
+  }
+}
+
+@media (max-height: 720px) {
+  .modalCard {
+    padding: 12px 22px;
+  }
+
+  .cardHeader {
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+
+  .modalTitle {
+    font-size: 20px;
+  }
+
+  .formBody {
+    gap: 20px;
+  }
+
+  .criteriaSection {
+    gap: 10px;
+  }
+
+  .groupTitle {
+    margin-bottom: 5px;
+    font-size: 13px;
+  }
+
+  .checkboxList {
+    gap: 5px;
+  }
+
+  .checkboxLabel {
+    font-size: 12.5px;
+  }
+
+  .inputsSection {
+    gap: 8px;
+  }
+
+  .inputGroup {
+    gap: 3px;
+  }
+
+  .inputLabel {
+    font-size: 12.5px;
+  }
+
+  .textInput,
+  .selectInput,
+  .searchableInputTrigger {
+    height: 34px;
+    min-height: 34px;
+    font-size: 12px;
+    padding-left: 36px;
+  }
+
+  .fieldIcon {
+    left: 11px;
+  }
+
+  .actionRow {
+    margin-top: 2px;
+  }
+
+  .orangeSubmitBtn {
+    padding: 8px 24px;
+    font-size: 13px;
+  }
+}
