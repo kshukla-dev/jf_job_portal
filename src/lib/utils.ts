@@ -59,14 +59,31 @@ export function translateDutchToEnglish(text?: string): string {
 }
 
 /**
- * Cleans rich HTML textfields from redundant or duplicate Dutch headers
+ * Cleans rich HTML textfields from redundant or duplicate Dutch headers,
+ * stray <br> tags causing excessive gaps, and malformed spacing from OTYS OWS CMS.
  */
 export function cleanRichHtml(html?: string): string {
   if (!html) return '';
   return html
+    // 1. Remove Dutch boilerplate headings
     .replace(/<h[1-6][^>]*>\s*(wat ga je doen\??|functieomschrijving|omschrijving van de functie)\s*<\/h[1-6]>/gi, '')
     .replace(/<h[1-6][^>]*>\s*(wat verwachten we van jou\??|wie ben jij\??|functie-eisen|eisen|profiel|wat neem je mee\??)\s*<\/h[1-6]>/gi, '')
     .replace(/<h[1-6][^>]*>\s*(wat bieden wij\??|arbeidsvoorwaarden|aanbod|ons aanbod)\s*<\/h[1-6]>/gi, '')
-    .replace(/<h[1-6][^>]*>\s*(over de organisatie|over het bedrijf|bedrijfsprofiel)\s*<\/h[1-6]>/gi, '');
+    .replace(/<h[1-6][^>]*>\s*(over de organisatie|over het bedrijf|bedrijfsprofiel)\s*<\/h[1-6]>/gi, '')
+    // 2. Remove <br> tags directly following headings (e.g. </h3><br>)
+    .replace(/(<\/h[1-6]>)\s*(?:<br\s*\/?>\s*)+/gi, '$1')
+    // 3. Remove <br> tags immediately at start of <ul> / <ol> (e.g. <ul><br><li>)
+    .replace(/(<ul[^>]*>|<ol[^>]*>)\s*(?:<br\s*\/?>\s*)+/gi, '$1')
+    // 4. Remove <br> tags directly between list items (e.g. </li><br><li>)
+    .replace(/(<\/li>)\s*(?:<br\s*\/?>\s*)+(?=<li)/gi, '$1')
+    // 5. Remove <br> tags before closing </ul> / </ol> (e.g. <br></ul>)
+    .replace(/\s*(?:<br\s*\/?>\s*)+(<\/ul>|<\/ol>)/gi, '$1')
+    // 6. Remove <br> tags immediately following closing </ul> / </ol> (e.g. </ul><br><h3>)
+    .replace(/(<\/ul>|<\/ol>)\s*(?:<br\s*\/?>\s*)+/gi, '$1')
+    // 7. Remove empty paragraphs with only whitespace, &nbsp; or <br>
+    .replace(/<p\b[^>]*>(?:[\s\t]|&nbsp;|<br\s*\/?>)*<\/p>/gi, '')
+    // 8. Collapse 2 or more consecutive <br> into a single <br>
+    .replace(/(?:<br\s*\/?>\s*){2,}/gi, '<br>')
+    .trim();
 }
 

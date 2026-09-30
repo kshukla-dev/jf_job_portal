@@ -244,13 +244,36 @@
 
 /* Rich Content Typography */
 .richContent {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 14.5px;
+  line-height: 1.65;
   color: #334155;
 }
 
+.richContent h1,
+.richContent h2,
+.richContent h3,
+.richContent h4,
+.richContent h5,
+.richContent h6 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 18px 0 6px;
+  line-height: 1.4;
+}
+
+.richContent h1:first-child,
+.richContent h2:first-child,
+.richContent h3:first-child,
+.richContent h4:first-child,
+.richContent h5:first-child,
+.richContent h6:first-child {
+  margin-top: 0;
+}
+
 .richContent p {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
+  line-height: 1.65;
 }
 
 .richContent p:last-child {
@@ -260,12 +283,32 @@
 .richContent ul,
 .richContent ol {
   padding-left: 20px;
-  margin: 12px 0;
+  margin: 6px 0 14px;
 }
 
 .richContent li {
-  margin-bottom: 8px;
-  line-height: 1.6;
+  margin-bottom: 5px;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.richContent li:last-child {
+  margin-bottom: 0;
+}
+
+/* Suppress redundant or empty <br> tags that cause huge spacing in lists and headers */
+.richContent ul > br,
+.richContent ol > br,
+.richContent li > br:last-child,
+.richContent h1 + br,
+.richContent h2 + br,
+.richContent h3 + br,
+.richContent h4 + br,
+.richContent h5 + br,
+.richContent h6 + br,
+.richContent ul + br,
+.richContent ol + br {
+  display: none !important;
 }
 
 .plainText {
