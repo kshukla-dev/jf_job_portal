@@ -35,8 +35,8 @@ export const API_ENDPOINTS = {
   },
   vacancies: {
     list: '/vacancies',
-    bySlug: (slug: string) => `/vacancies/slug/${slug}`,
-    details: (id: string | number) => `/vacancies/${id}`,
+    bySlug: (slug: string) => `/vacancies/slug/${encodeURIComponent(slug)}?includeUnpublishedTextfields=true`,
+    details: (id: string | number) => `/vacancies/${encodeURIComponent(String(id))}?includeUnpublishedTextfields=true`,
   },
   forms: {
     jobAlert: '/jobalert-form',
@@ -225,21 +225,107 @@ export async function apiRequest<T = unknown>(
 export interface VacancyFilterParams {
   page?: number;
   itemsPerPage?: number;
-  keywords?: string;
-  category?: number | string;
-  country?: 'nl' | string;
-  radius?: string | number;
+  MatchCriteria?: Record<number | string, string | number[] | number> | string;
+  matchcriteria?: Record<number | string, string | number[] | number>;
+  VacancyCategory?: number | string | number[];
+  category?: number | string | number[];
+  'geo-country'?: 'nl' | 'be' | 'lu' | 'fr' | 'de' | 'gb' | 'au' | 'at' | string;
+  country?: 'nl' | 'be' | 'lu' | 'fr' | 'de' | 'gb' | 'au' | 'at' | string;
+  'geo-radius'?: number | string;
+  radius?: number | string;
+  'geo-zipcode'?: string;
   zipcode?: string;
+  keywords?: string;
+  publishedLanguage?: string[] | string;
   published?: boolean;
-  publishedLanguage?: string[];
   includeUnpublishedTextfields?: boolean;
 }
 
 /**
  * Builds URL with query parameters supported by OTYS Vacancies API
+ * GET /api/vacancies
  */
 export function buildVacanciesUrl(params: VacancyFilterParams = {}): string {
   const query = new URLSearchParams();
+
+  // 1. Pagination: page (default 1) & itemsPerPage (default 10)
+  const page = params.page !== undefined && params.page !== null ? Math.max(1, Number(params.page)) : 1;
+  query.set('page', String(page));
+
+  const itemsPerPage = params.itemsPerPage !== undefined && params.itemsPerPage !== null ? Number(params.itemsPerPage) : 10;
+  query.set('itemsPerPage', String(itemsPerPage));
+
+  // 2. Published status filter (defaults to true for active vacancies)
+  const published = params.published !== undefined ? params.published : true;
+  query.set('published', String(published));
+
+  // 3. Include unpublished textfields (defaults to true for full descriptions)
+  const includeUnpublishedTextfields =
+    params.includeUnpublishedTextfields !== undefined ? params.includeUnpublishedTextfields : true;
+  query.set('includeUnpublishedTextfields', String(includeUnpublishedTextfields));
+
+  // 4. Keywords search (Vacancy title, descriptions, external ref, culture, salary, etc.)
+  if (params.keywords && String(params.keywords).trim()) {
+    query.set('keywords', String(params.keywords).trim());
+  }
+
+  // 5. VacancyCategory (single ID or comma-separated list of IDs)
+  const category = params.VacancyCategory ?? params.category;
+  if (category !== undefined && category !== null && category !== '') {
+    const catVal = Array.isArray(category) ? category.join(',') : String(category).trim();
+    if (catVal) query.set('VacancyCategory', catVal);
+  }
+
+  // 6. MatchCriteria (criteria ID 1 to 18, e.g. ?matchcriteria[1]=xxxx,xxxx)
+  const criteriaObj =
+    params.matchcriteria ?? (typeof params.MatchCriteria === 'object' ? params.MatchCriteria : undefined);
+  if (criteriaObj && typeof criteriaObj === 'object') {
+    for (const [critId, val] of Object.entries(criteriaObj)) {
+      if (val !== undefined && val !== null && val !== '') {
+        const valStr = Array.isArray(val) ? val.join(',') : String(val).trim();
+        if (valStr) query.set(`matchcriteria[${critId}]`, valStr);
+      }
+    }
+  } else if (typeof params.MatchCriteria === 'string' && params.MatchCriteria.trim()) {
+    const rawParts = params.MatchCriteria.split('&');
+    for (const part of rawParts) {
+      const [k, v] = part.split('=');
+      if (k && v) query.set(k.trim(), v.trim());
+    }
+  }
+
+  // 7. Geo location filters (geo-country, geo-radius, geo-zipcode)
+  const country = params['geo-country'] ?? params.country;
+  if (country && String(country).trim()) {
+    query.set('geo-country', String(country).trim().toLowerCase());
+  }
+
+  const radius = params['geo-radius'] ?? params.radius;
+  if (radius !== undefined && radius !== null && radius !== '') {
+    query.set('geo-radius', String(radius).trim());
+  }
+
+  const zipcode = params['geo-zipcode'] ?? params.zipcode;
+  if (zipcode && String(zipcode).trim()) {
+    query.set('geo-zipcode', String(zipcode).trim());
+  }
+
+  // 8. Published Language (array or comma-separated string)
+  if (params.publishedLanguage) {
+    if (Array.isArray(params.publishedLanguage)) {
+      params.publishedLanguage.forEach((lang) => {
+        if (lang && String(lang).trim()) {
+          query.append('publishedLanguage[]', String(lang).trim());
+        }
+      });
+    } else if (typeof params.publishedLanguage === 'string' && params.publishedLanguage.trim()) {
+      params.publishedLanguage.split(',').forEach((lang) => {
+        const trimmed = lang.trim();
+        if (trimmed) query.append('publishedLanguage[]', trimmed);
+      });
+    }
+  }
+
   const queryString = query.toString();
   return queryString ? `${API_ENDPOINTS.vacancies.list}?${queryString}` : API_ENDPOINTS.vacancies.list;
 }
@@ -275,9 +361,34 @@ export function mapOtysVacancyToJob(raw: any): Job {
   const title = String(raw.title || raw.name || raw.vacancyTitle || 'Untitled Position');
   const slug = String(raw.slug || raw.customSlug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || id);
   const company = String(raw.company || raw.relation?.name || 'Jackson & Frank');
-  const city = String(raw.location || raw.city || '');
-  const country = 'Netherlands';
-  const location = city ? `${city}, ${country}` : country;
+  const rawLoc = String(raw.location || raw.city || '').trim();
+  let city = '';
+  let country = 'Netherlands';
+  let location = rawLoc || 'Netherlands';
+
+  // if (rawLoc) {
+  //   if (rawLoc.includes('(') && rawLoc.includes(')')) {
+  //     city = rawLoc.replace(/\s*\([^)]*\)/g, '').trim();
+  //     country = 'Netherlands';
+  //     location = rawLoc;
+  //   } else if (rawLoc.toLowerCase() === 'hungary') {
+  //     city = 'Budapest';
+  //     country = 'Hungary';
+  //     location = 'Hungary';
+  //   } else if (rawLoc.toLowerCase() === 'malaysia') {
+  //     city = 'Kuala Lumpur';
+  //     country = 'Malaysia';
+  //     location = 'Malaysia';
+  //   } else if (rawLoc.toLowerCase().includes('bangalore') || rawLoc.toLowerCase().includes('nagpur')) {
+  //     city = rawLoc;
+  //     country = 'India';
+  //     location = `${rawLoc}, India`;
+  //   } else {
+  //     city = rawLoc;
+  //     country = 'Netherlands';
+  //     location = rawLoc.includes(',') ? rawLoc : `${rawLoc}, ${country}`;
+  //   }
+  // }
 
   // Extract Skills from matchCriteria
   let skills: string[] = [];
@@ -765,9 +876,9 @@ export function normalizeJobAlertFormResponse(raw: OtysRawFormResponse): Normali
 
       const options: JobAlertFieldOption[] | undefined = Array.isArray(q.options)
         ? q.options.map((opt) => ({
-            value: String(opt.value),
-            label: opt.label || String(opt.value),
-          }))
+          value: String(opt.value),
+          label: opt.label || String(opt.value),
+        }))
         : undefined;
 
       // Clean display label while keeping original question context
