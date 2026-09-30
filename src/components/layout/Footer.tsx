@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import styles from './Footer.module.css'
+import { useJobAlertModal } from '@/context/JobAlertModalContext'
 
 // Newsletter validation and helper
 const newsletterSchema = {
@@ -36,6 +37,7 @@ const year = new Date().getFullYear()
 
 export default function Footer() {
   const pathname = usePathname()
+  const { openJobAlertModal } = useJobAlertModal()
   const [email, setEmail] = useState('')
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
   const subscribed = newsletterStatus === 'success'
@@ -92,7 +94,20 @@ export default function Footer() {
           <div className={styles.footerLinksGrid}>
             <div className={styles.flCol}>
               <h4>Opportunities</h4>
-              {opportunities.map(link => <Link key={link.name} href={link.href}>{link.name}</Link>)}
+              {opportunities.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={(e) => {
+                    if (link.href === '/job-alert') {
+                      e.preventDefault();
+                      openJobAlertModal();
+                    }
+                  }}
+                >
+                  {link.name}
+                </Link>
+              ))}
             </div>
 
             <div className={styles.flCol}>

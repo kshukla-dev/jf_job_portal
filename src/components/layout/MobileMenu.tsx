@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { mainNavigation } from '@/data/navigation';
+import { useJobAlertModal } from '@/context/JobAlertModalContext';
 import styles from './MobileMenu.module.css';
 
 interface MobileMenuProps {
@@ -14,6 +15,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const pathname = usePathname();
+  const { openJobAlertModal } = useJobAlertModal();
 
   useEffect(() => {
     if (isOpen) {
@@ -51,13 +53,22 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <nav>
           <ul className={styles.navList}>
             {mainNavigation.map((item) => {
+              const isJobAlert = item.href === '/job-alert';
               const isActive = pathname === item.href;
               return (
                 <li key={item.name}>
                   <Link
                     href={item.href}
                     className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-                    onClick={onClose}
+                    onClick={(e) => {
+                      if (isJobAlert) {
+                        e.preventDefault();
+                        onClose();
+                        openJobAlertModal();
+                      } else {
+                        onClose();
+                      }
+                    }}
                   >
                     {item.name}
                   </Link>
